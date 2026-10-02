@@ -1,7 +1,7 @@
 // DuoPay Production Service Worker
-// Version: 2026.10.1
+// Version: 2026.10.2
 
-const VERSION = '2026.10.1';
+const VERSION = '2026.10.2';
 const CACHE_STATIC_NAME = `duopay-static-v${VERSION}`;
 const CACHE_RUNTIME_NAME = `duopay-runtime-v${VERSION}`;
 const EXPECTED_CACHES = [CACHE_STATIC_NAME, CACHE_RUNTIME_NAME];
