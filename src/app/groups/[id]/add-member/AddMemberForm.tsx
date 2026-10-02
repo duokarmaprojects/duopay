@@ -59,7 +59,7 @@ export default function AddMemberForm({ groupId }: { groupId: string }) {
         </div>
 
         <div className="flex flex-col gap-3">
-          <ContactPicker onSelect={(phone) => setPhoneOrUpi(phone)} />
+          <ContactPicker onSelectUser={(phone) => setPhoneOrUpi(phone)} groupId={groupId} />
           <ShareInviteLink groupId={groupId} />
         </div>
       </div>

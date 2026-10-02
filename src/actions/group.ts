@@ -6,6 +6,7 @@ import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { trackEvent } from "@/domain/analytics"
+import { normalizePhoneNumber } from "@/domain/phone"
 
 const createGroupSchema = z.object({
   name: z.string().min(1, "Group name is required").max(50, "Group name is too long"),
@@ -58,12 +59,14 @@ export async function addMemberToGroup(groupId: string, phoneOrUpi: string) {
   })
   if (!isMember) throw new Error("Unauthorized access to group")
 
-  // Find user to add
+  // Find user to add with phone normalization
+  const normalizedPhone = normalizePhoneNumber(phoneOrUpi)
   const userToAdd = await prisma.user.findFirst({
     where: {
       OR: [
-        { phone: phoneOrUpi },
-        { upiId: phoneOrUpi }
+        ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+        { phone: phoneOrUpi.trim() },
+        { upiId: phoneOrUpi.trim() }
       ]
     }
   })
