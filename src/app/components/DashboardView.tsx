@@ -24,7 +24,11 @@ export default function DashboardView({ user, sessionUser, totalUserOwes, totalO
         <div className="flex justify-between items-center mb-6">
           <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
             {user?.image || sessionUser.image ? (
-              <img src={user?.image || sessionUser.image} alt="Profile" className="w-full h-full object-cover" />
+              <img 
+                src={user?.image?.startsWith('data:') ? `/api/users/${user.id}/avatar` : (user?.image || sessionUser.image || '')} 
+                alt="Profile" 
+                className="w-full h-full object-cover" 
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-gray-500 font-medium">
                 {user?.name?.charAt(0) || sessionUser.name?.charAt(0) || 'U'}

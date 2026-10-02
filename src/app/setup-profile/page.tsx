@@ -51,7 +51,7 @@ export default async function SetupProfilePage() {
             className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
           />
           <p className="text-xs text-gray-500 mt-1">
-            Your UPI ID is used by others to pay you. DuoPay does not hold your money.
+            Format: username@handle (e.g. name@okhdfcbank). Newly added UPI IDs require verification before being marked as verified payment destinations.
           </p>
         </div>
 

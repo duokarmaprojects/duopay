@@ -1,6 +1,6 @@
 # DuoPay
 
-Split. Simplify. Get to ₹0.
+Split. Settle. Done.
 
 DuoPay is a mobile-first PWA for expense splitting and settlement using Indian UPI.
 

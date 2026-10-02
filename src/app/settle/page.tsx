@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, CheckCircle2, AlertTriangle } from "lucide-react"
 import { getUserBalances } from "@/services/balance"
 import { generateUpiIntent } from "@/domain/upi"
 import { recordSettlement } from "@/actions/settlement"
@@ -57,22 +57,60 @@ export default async function SettlePage({
       </header>
 
       <div className="flex-1 p-6 flex flex-col items-center pt-12">
+        {/* Avatar & Receiver Info */}
         <div className="w-20 h-20 bg-gray-100 rounded-full mb-4 overflow-hidden flex items-center justify-center text-gray-500 text-2xl font-bold">
-          {receiver.image ? <img src={receiver.image} className="w-full h-full object-cover"/> : receiver.name?.charAt(0)}
+          {receiver.image ? (
+            <img 
+              src={receiver.image.startsWith('data:') ? `/api/users/${receiver.id}/avatar` : receiver.image} 
+              className="w-full h-full object-cover" 
+              alt=""
+            />
+          ) : (
+            receiver.name?.charAt(0)
+          )}
         </div>
         <p className="text-gray-500 font-medium mb-1">Paying {receiver.name}</p>
-        <h2 className="text-4xl font-bold mb-10">₹{amountToPay / 100}</h2>
+        <h2 className="text-4xl font-bold mb-6">₹{amountToPay / 100}</h2>
 
-        <div className="w-full max-w-sm mb-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
-          <p className="text-sm text-gray-500 mb-1">UPI ID</p>
-          <p className="font-medium">{receiver.upiId}</p>
+        {/* UPI ID Details & Verification Badge */}
+        <div className="w-full max-w-sm mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">UPI ID</span>
+            {receiver.upiVerified ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <CheckCircle2 size={12} className="text-emerald-600" />
+                ✓ Verified UPI
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                <AlertTriangle size={12} className="text-amber-600" />
+                ⚠ UPI not verified
+              </span>
+            )}
+          </div>
+          <p className="font-mono font-medium text-base text-gray-900">{receiver.upiId}</p>
+          {receiver.upiVerified && receiver.upiVerifiedName && (
+            <p className="text-xs text-emerald-800">
+              Verified Name: <span className="font-semibold">{receiver.upiVerifiedName}</span>
+            </p>
+          )}
+          {!receiver.upiVerified && (
+            <div className="mt-1 p-2.5 bg-amber-50/80 rounded-xl border border-amber-200/60 text-[11px] text-amber-800 flex items-start gap-2">
+              <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5" />
+              <span>This UPI ID has not been verified by a banking provider. Please confirm with {receiver.name} before paying.</span>
+            </div>
+          )}
         </div>
 
         <a 
           href={upiIntent}
-          className="w-full max-w-sm bg-emerald-500 text-white font-bold py-4 px-4 rounded-xl text-center active:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/30 mb-6"
+          className={`w-full max-w-sm text-white font-bold py-4 px-4 rounded-xl text-center transition-colors shadow-lg mb-6 ${
+            receiver.upiVerified
+              ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/30 active:bg-emerald-700"
+              : "bg-gray-900 hover:bg-black shadow-gray-900/20 active:bg-gray-800"
+          }`}
         >
-          Pay with UPI App
+          {receiver.upiVerified ? "Pay with UPI App" : "Proceed with Payment (Unverified)"}
         </a>
 
         <div className="w-full max-w-sm border-t border-gray-100 pt-6">

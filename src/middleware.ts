@@ -11,22 +11,35 @@ export default auth((req) => {
   const isAuthRoute = nextUrl.pathname.startsWith('/api/auth')
   const isLoginRoute = nextUrl.pathname === '/login'
 
+  let response: NextResponse
+
   if (isAuthRoute) {
-    return NextResponse.next()
-  }
-
-  if (isLoginRoute) {
+    response = NextResponse.next()
+  } else if (isLoginRoute) {
     if (isLoggedIn) {
-      return NextResponse.redirect(new URL('/', nextUrl))
+      response = NextResponse.redirect(new URL('/', nextUrl))
+    } else {
+      response = NextResponse.next()
     }
-    return NextResponse.next()
+  } else if (!isLoggedIn) {
+    response = NextResponse.redirect(new URL('/login', nextUrl))
+  } else {
+    response = NextResponse.next()
   }
 
-  if (!isLoggedIn) {
-    return NextResponse.redirect(new URL('/login', nextUrl))
+  // Clear stale cookie chunks if present to keep headers small (< 1KB)
+  for (let i = 1; i <= 20; i++) {
+    const name = `authjs.session-token.${i}`
+    const secureName = `__Secure-authjs.session-token.${i}`
+    if (req.cookies.has(name)) {
+      response.cookies.delete(name)
+    }
+    if (req.cookies.has(secureName)) {
+      response.cookies.delete(secureName)
+    }
   }
 
-  return NextResponse.next()
+  return response
 })
 
 // Optionally, don't invoke Middleware on some paths

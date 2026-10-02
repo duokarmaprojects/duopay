@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "DuoPay",
-  description: "Split. Simplify. Get to ₹0.",
+  description: "Split. Settle. Done.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

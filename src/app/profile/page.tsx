@@ -10,6 +10,7 @@ import {
 import { getUserBalances } from "@/services/balance"
 import ProfileImageUpload from "./upload-form"
 import AppearanceSettings from "./AppearanceSettings"
+import UpiModal from "./UpiModal"
 
 export default async function ProfilePage() {
   const session = await auth()
@@ -63,12 +64,22 @@ export default async function ProfilePage() {
     <div className="flex flex-col flex-1 bg-gray-50 pb-24">
       {/* 1. Profile Header */}
       <header className="bg-white px-6 pt-10 pb-8 flex flex-col items-center">
-        <ProfileImageUpload currentImage={user?.image || session.user.image || null} name={user?.name || session.user.name || 'User'} />
+        <ProfileImageUpload 
+          currentImage={user?.image?.startsWith('data:') ? `/api/users/${user.id}/avatar` : (user?.image || session.user.image || null)} 
+          name={user?.name || session.user.name || 'User'} 
+        />
         <h1 className="text-2xl font-bold text-gray-900 mb-1">{user?.name || session.user.name}</h1>
-        <div className="flex items-center gap-3 text-sm text-gray-500 font-medium">
-          <span>{user?.phone}</span>
-          <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-          <span className="text-gray-700">{user?.upiId}</span>
+        <div className="flex flex-col items-center gap-2 mt-1">
+          <div className="flex items-center gap-3 text-sm text-gray-500 font-medium">
+            <span>{user?.phone}</span>
+            <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+            <span className="text-gray-900 font-medium">{user?.upiId || 'No UPI ID'}</span>
+          </div>
+          <UpiModal 
+            currentUpiId={user?.upiId || null} 
+            isVerified={Boolean(user?.upiVerified)} 
+            verifiedName={user?.upiVerifiedName} 
+          />
         </div>
       </header>
 

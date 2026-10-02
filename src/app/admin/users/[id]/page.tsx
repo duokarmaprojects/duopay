@@ -17,7 +17,14 @@ export default async function AdminUserDetailPage({
 
   const user = await prisma.user.findUnique({
     where: { id: params.id },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      createdAt: true,
+      updatedAt: true,
       groupMembers: {
         include: {
           group: true

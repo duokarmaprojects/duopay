@@ -7,10 +7,12 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { normalizePhoneNumber } from "@/domain/phone"
+import { validateUpiFormat } from "@/domain/upi"
+import { verifyUpiId } from "@/services/upiVerification"
 
 const profileSchema = z.object({
   phone: z.string().min(10, "Phone number is too short").max(20, "Phone number is too long"),
-  upiId: z.string().includes("@", { message: "Invalid UPI ID" }).min(5, "UPI ID is too short"),
+  upiId: z.string().min(5, "UPI ID is too short"),
 })
 
 export async function completeProfile(formData: FormData) {
@@ -20,12 +22,17 @@ export async function completeProfile(formData: FormData) {
   }
 
   const rawPhone = formData.get("phone") as string
-  const upiId = formData.get("upiId") as string
+  const rawUpiId = formData.get("upiId") as string
 
-  const parsed = profileSchema.safeParse({ phone: rawPhone, upiId })
+  const parsed = profileSchema.safeParse({ phone: rawPhone, upiId: rawUpiId })
 
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0].message)
+  }
+
+  const format = validateUpiFormat(parsed.data.upiId)
+  if (!format.valid || !format.normalized) {
+    throw new Error(format.error || "Invalid UPI ID format.")
   }
 
   const phone = normalizePhoneNumber(parsed.data.phone) || parsed.data.phone.trim()
@@ -34,27 +41,80 @@ export async function completeProfile(formData: FormData) {
     where: { id: session.user.id },
     data: {
       phone,
-      upiId: parsed.data.upiId.trim()
+      upiId: format.normalized,
+      upiVerified: false,
+      upiVerifiedAt: null,
+      upiVerificationReference: null,
+      upiVerifiedName: null,
     }
   })
 
   redirect('/')
 }
 
+export async function verifyUpiIdAction(rawUpiId: string) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  return await verifyUpiId(rawUpiId, session.user.id)
+}
+
 export async function updateUpiId(newUpi: string) {
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
 
-  if (!newUpi.includes("@") || newUpi.length < 5) {
-    throw new Error("Invalid UPI ID")
+  const format = validateUpiFormat(newUpi)
+  if (!format.valid || !format.normalized) {
+    throw new Error(format.error || "Invalid UPI ID format.")
   }
 
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { upiId: newUpi.trim() }
+  const normalized = format.normalized
+
+  // Check if this normalized UPI ID has verified proof in UpiVerification cache
+  const cachedVerification = await prisma.upiVerification.findUnique({
+    where: { upiId: normalized }
   })
 
+  const isVerifiedByProvider = cachedVerification?.status === 'VERIFIED' && cachedVerification.expiresAt > new Date()
+
+  // Re-verification enforcement:
+  // If user changed their UPI ID, old verification must NEVER carry over!
+  // And a user cannot directly call this action to mark a fake UPI ID as verified.
+  if (isVerifiedByProvider) {
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        upiId: normalized,
+        upiVerified: true,
+        upiVerifiedAt: cachedVerification.verifiedAt,
+        upiVerificationReference: cachedVerification.referenceId,
+        upiVerifiedName: cachedVerification.verifiedName,
+      }
+    })
+  } else {
+    // Unverified UPI ID
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        upiId: normalized,
+        upiVerified: false,
+        upiVerifiedAt: null,
+        upiVerificationReference: null,
+        upiVerifiedName: null,
+      }
+    })
+  }
+
   revalidatePath('/profile')
+  revalidatePath('/settle')
+  revalidatePath('/')
+
+  return {
+    success: true,
+    upiId: normalized,
+    upiVerified: Boolean(isVerifiedByProvider),
+    verifiedName: isVerifiedByProvider ? cachedVerification.verifiedName : null
+  }
 }
 
 export async function uploadProfileImage(formData: FormData) {
@@ -95,7 +155,7 @@ export async function uploadProfileImage(formData: FormData) {
 
   revalidatePath('/profile')
   revalidatePath('/')
-  return { success: true, imageUrl: finalImageUrl }
+  return { success: true, imageUrl: `/api/users/${session.user.id}/avatar` }
 }
 
 export async function matchContacts(contacts: Array<{ name: string; tel: string }>) {

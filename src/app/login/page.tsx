@@ -17,8 +17,8 @@ export default async function LoginPage() {
           D
         </div>
         <h1 className="text-3xl font-bold mb-2">DuoPay</h1>
-        <p className="text-gray-500 mb-10 text-center">
-          Split. Simplify. Get to ₹0.
+        <p className="text-gray-500 mb-10 text-center font-medium tracking-tight">
+          Split. Settle. Done.
         </p>
 
         <form

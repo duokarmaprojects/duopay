@@ -15,10 +15,14 @@ model User {
   emailVerified DateTime?
   image         String?
   phone         String?   // Normalized E.164
-  upiId         String?
-  role          String    @default("USER") // USER, ADMIN
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  upiId                    String?
+  upiVerified              Boolean   @default(false)
+  upiVerifiedAt            DateTime?
+  upiVerificationReference String?
+  upiVerifiedName          String?
+  role                     String    @default("USER") // USER, ADMIN
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
   accounts      Account[]
   sessions      Session[]
@@ -115,20 +119,31 @@ model ExpenseParticipant {
 }
 
 model Settlement {
-  id             String   @id @default(cuid())
-  groupId        String?  // Optional, context for settlement
-  payerId        String
-  receiverId     String
-  amount         Int      // In paise
-  status         String   @default("COMPLETED") // V1: INITIATED, COMPLETED, CANCELLED
-  note           String?
-  reportedAt     DateTime @default(now())
-  createdAt      DateTime @default(now())
-  idempotencyKey String?  @unique
+  id                    String    @id @default(cuid())
+  groupId               String?   // Optional, context for settlement
+  payerId               String
+  receiverId            String
+  amount                Int       // In paise
+  status                String    @default("COMPLETED") // INITIATED, COMPLETED, SETTLED, CANCELLED, FAILED
+  paymentStatus         String    @default("PAYMENT_PENDING") // PAYMENT_INITIATED, PAYMENT_PENDING, PAYMENT_SUCCESS, PAYMENT_FAILED, PAYMENT_CANCELLED, PAYMENT_UNKNOWN
+  paymentProvider       String?   // upi_intent, razorpay, cashfree, manual_confirmation
+  providerTransactionId String?   // UTR or gateway payment ID
+  paymentInitiatedAt    DateTime?
+  paymentCompletedAt    DateTime?
+  paymentFailureReason  String?
+  settledAt             DateTime?
+  payeeUpiId            String?
+  note                  String?
+  reportedAt            DateTime  @default(now())
+  createdAt             DateTime  @default(now())
+  idempotencyKey        String?   @unique
 
-  group          Group?   @relation(fields: [groupId], references: [id], onDelete: Restrict)
-  payer          User     @relation("SettlementsPaid", fields: [payerId], references: [id], onDelete: Restrict)
-  receiver       User     @relation("SettlementsReceived", fields: [receiverId], references: [id], onDelete: Restrict)
+  group                 Group?    @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  payer                 User      @relation("SettlementsPaid", fields: [payerId], references: [id], onDelete: Restrict)
+  receiver              User      @relation("SettlementsReceived", fields: [receiverId], references: [id], onDelete: Restrict)
+
+  @@index([providerTransactionId])
+  @@index([paymentStatus])
 }
 
 model AnalyticsEvent {
@@ -157,4 +172,27 @@ model SystemError {
 
   @@index([code])
   @@index([createdAt])
+}
+
+model UpiVerification {
+  id           String   @id @default(cuid())
+  upiId        String   @unique
+  verifiedName String?
+  status       String   // VERIFIED, FAILED, UNAVAILABLE
+  provider     String   // e.g. "cashfree", "razorpay", "setu", "none"
+  referenceId  String?
+  verifiedAt   DateTime @default(now())
+  expiresAt    DateTime
+
+  @@index([upiId])
+}
+
+model UpiVerificationAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  upiId     String
+  success   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

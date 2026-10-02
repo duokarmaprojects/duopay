@@ -9,6 +9,7 @@ import {
   HelpCircle, FileText, ChevronRight, X
 } from "lucide-react"
 import { updateUpiId } from "@/actions/user"
+import { validateUpiFormat } from "@/domain/upi"
 
 type SettingsListProps = {
   userName: string
@@ -38,10 +39,17 @@ export default function SettingsList({ userName, userPhone, upiId, email }: Sett
 
   const handleUpdateUpi = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSaving(true)
     setError("")
+
+    const check = validateUpiFormat(newUpi)
+    if (!check.valid || !check.normalized) {
+      setError(check.error || "Invalid UPI ID format.")
+      return
+    }
+
+    setIsSaving(true)
     try {
-      await updateUpiId(newUpi)
+      await updateUpiId(check.normalized)
       setIsEditingUpi(false)
     } catch (err: any) {
       setError(err.message || "Failed to update UPI ID")

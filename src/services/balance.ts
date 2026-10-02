@@ -20,7 +20,7 @@ export async function getUserBalances(userId: string) {
         { payerId: userId },
         { receiverId: userId }
       ],
-      status: "COMPLETED"
+      status: { in: ["COMPLETED", "SETTLED"] }
     }
   })
 
