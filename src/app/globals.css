@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #111827; /* gray-900 */
+}
+
+.dark {
+  /* Core UI */
+  --color-white: #111820; /* Surfaces */
+  --color-gray-50: #0B0F14; /* App background */
+  --color-gray-100: #161E27; /* Secondary surface / hover / borders in light mode */
+  --color-gray-200: #25303B; /* Borders */
+  --color-gray-300: #374151; /* Darker borders */
+  --color-gray-400: #6B7280; /* Tertiary text */
+  --color-gray-500: #9AA6B2; /* Secondary text */
+  --color-gray-600: #A8B3CF;
+  --color-gray-700: #F5F7FA;
+  --color-gray-800: #F5F7FA;
+  --color-gray-900: #F5F7FA; /* Primary text */
+  --color-black: #ffffff; /* Primary actions */
+  
+  /* Balances */
+  --color-red-50: #2A1115; /* Dark red tinted surface */
+  --color-red-100: #3F1D1D;
+  --color-red-500: #FCA5A5;
+  --color-red-600: #FCA5A5;
+  --color-red-700: #F87171;
+  
+  --color-emerald-50: #0D2218; /* Dark green tinted surface */
+  --color-emerald-100: #143524;
+  --color-emerald-500: #6EE7B7;
+  --color-emerald-600: #6EE7B7;
+  --color-emerald-700: #34D399;
+
+  --color-blue-50: #0D1C2A;
+  --color-blue-100: #142D45;
+  --color-blue-600: #93C5FD;
+  
+  --color-purple-50: #1C1226;
+  --color-purple-100: #2C1D3A;
+  --color-purple-600: #D8B4FE;
+  
+  --color-orange-50: #29150B;
+  --color-orange-100: #3D2010;
+  --color-orange-600: #FDBA74;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+body {
+  background-color: var(--color-gray-50);
+  color: var(--color-gray-900);
+}
+
+/* Custom Utilities for money */
+.text-balance-positive {
+  color: var(--color-emerald-500, #10b981);
+}
+.text-balance-negative {
+  color: var(--color-red-500, #ef4444);
+}
+
+/* Hide scrollbar for clean mobile feel */
+::-webkit-scrollbar {
+  display: none;
+}
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Base input overrides for Dark Mode */
+.dark input[type="text"],
+.dark input[type="number"],
+.dark input[type="password"],
+.dark input[type="email"] {
+  background-color: var(--color-gray-50) !important;
+  color: var(--color-gray-900) !important;
+  border-color: var(--color-gray-200) !important;
+}
+
+.dark input::placeholder {
+  color: var(--color-gray-400) !important;
+}

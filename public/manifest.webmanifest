@@ -1,0 +1,9 @@
+{
+  "name": "DuoPay",
+  "short_name": "DuoPay",
+  "description": "Split. Simplify. Get to ₹0.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff"
+}
