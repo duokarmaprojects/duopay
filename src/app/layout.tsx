@@ -3,20 +3,34 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./theme-provider";
 
+import { PwaProvider } from "@/components/pwa/PwaProvider";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "DuoPay",
   description: "Split. Simplify. Get to ₹0.",
   manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "DuoPay",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff", // Will adapt via CSS
+  themeColor: "#09090b",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false, // Prevents zooming on mobile inputs
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -45,9 +59,11 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-gray-50 text-gray-900 antialiased min-h-screen flex flex-col transition-colors duration-200 ease-in-out`}>
         <ThemeProvider>
-          <main className="flex-1 flex flex-col w-full max-w-md mx-auto bg-white shadow-sm min-h-screen overflow-x-hidden pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] relative transition-colors duration-200 ease-in-out">
-            {children}
-          </main>
+          <PwaProvider>
+            <main className="flex-1 flex flex-col w-full max-w-md mx-auto bg-white shadow-sm min-h-screen overflow-x-hidden pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] relative transition-colors duration-200 ease-in-out">
+              {children}
+            </main>
+          </PwaProvider>
         </ThemeProvider>
       </body>
     </html>
