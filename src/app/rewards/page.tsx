@@ -16,6 +16,8 @@ import {
 import { getCashbackSummary, getCashbackHistory } from "@/actions/cashback"
 import CashbackCard from "@/components/rewards/CashbackCard"
 
+import { prisma } from "@/lib/db"
+
 export const metadata = {
   title: "Cashback & Rewards | DuoPay",
   description: "Earn instant cashback on every verified payment made with DuoPay.",
@@ -24,6 +26,11 @@ export const metadata = {
 export default async function RewardsPage() {
   const session = await auth()
   if (!session?.user?.id) {
+    redirect("/login")
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } })
+  if (!user) {
     redirect("/login")
   }
 

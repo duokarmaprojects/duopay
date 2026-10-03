@@ -22,7 +22,11 @@ export default async function HomePage() {
     }
   })
 
-  if (user && (!user.phone || !user.upiId || !user.name || user.name === "New User")) {
+  if (!user) {
+    redirect('/login')
+  }
+
+  if (!user.phone || !user.upiId || !user.name || user.name === "New User") {
     redirect('/setup-profile')
   }
 

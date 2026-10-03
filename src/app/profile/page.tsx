@@ -20,8 +20,10 @@ export default async function ProfilePage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } })
+  if (!user) redirect('/login')
+
   const [
-    user,
     { totalOwedToUser, totalUserOwes },
     groupCount,
     expenseCount,
@@ -29,7 +31,6 @@ export default async function ProfilePage() {
     userSettings,
     cashbackSummary,
   ] = await Promise.all([
-    prisma.user.findUnique({ where: { id: session.user.id } }),
     getUserBalances(session.user.id),
     prisma.groupMember.count({ where: { userId: session.user.id } }),
     prisma.expense.count({ 

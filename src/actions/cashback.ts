@@ -51,7 +51,18 @@ export async function getCashbackSummary(): Promise<CashbackSummary> {
   })
 
   if (!user) {
-    throw new Error("User not found")
+    return {
+      balancePaise: 0,
+      balanceRupees: "0.00",
+      thresholdPaise: MIN_REDEMPTION_THRESHOLD_PAISE,
+      remainingPaise: MIN_REDEMPTION_THRESHOLD_PAISE,
+      isUnlocked: false,
+      progressPercentage: 0,
+      upiId: null,
+      canRedeem: false,
+      reason: "User not found",
+      activeRedemption: null,
+    }
   }
 
   const activeRedemption = await prisma.redemptionRequest.findFirst({
