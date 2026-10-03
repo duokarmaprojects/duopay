@@ -223,3 +223,95 @@ export function calculateNetBalances(
 
   return positions;
 }
+
+export interface SimplifiedTransaction {
+  fromUserId: string
+  toUserId: string
+  amountPaise: Paise
+}
+
+/**
+ * Greedy / min-cash-flow algorithm to simplify multi-party balances into minimum transactions.
+ * Preserves exact net balance conservation for every participant in minor units (paise).
+ * Net zero sum: sum of all net balances in any closed system is strictly 0.
+ */
+export function simplifyDebts(
+  expenses: ExpenseRecord[],
+  settlements: SettlementRecord[]
+): {
+  simplifiedTransactions: SimplifiedTransaction[]
+  originalTransactionCount: number
+  optimizedTransactionCount: number
+  totalOriginalVolumePaise: number
+  totalOptimizedVolumePaise: number
+} {
+  const pairwisePositions = calculateNetBalances(expenses, settlements)
+
+  // 1. Calculate each user's global net balance (positive = owed money / creditor, negative = owes money / debtor)
+  const netBalanceMap = new Map<string, Paise>()
+  let originalTransactionCount = 0
+  let totalOriginalVolumePaise = 0
+
+  for (const [creditor, debtors] of Object.entries(pairwisePositions)) {
+    for (const [debtor, amount] of Object.entries(debtors)) {
+      if (amount > 0) {
+        originalTransactionCount += 1
+        totalOriginalVolumePaise += amount
+        netBalanceMap.set(creditor, (netBalanceMap.get(creditor) || 0) + amount)
+        netBalanceMap.set(debtor, (netBalanceMap.get(debtor) || 0) - amount)
+      }
+    }
+  }
+
+  // 2. Separate into debtors (net < 0) and creditors (net > 0)
+  const debtors: { userId: string; amount: Paise }[] = []
+  const creditors: { userId: string; amount: Paise }[] = []
+
+  for (const [userId, net] of netBalanceMap.entries()) {
+    if (net < 0) {
+      debtors.push({ userId, amount: Math.abs(net) })
+    } else if (net > 0) {
+      creditors.push({ userId, amount: net })
+    }
+  }
+
+  // Sort descending by amount for greedy matching
+  debtors.sort((a, b) => b.amount - a.amount || a.userId.localeCompare(b.userId))
+  creditors.sort((a, b) => b.amount - a.amount || a.userId.localeCompare(b.userId))
+
+  const simplifiedTransactions: SimplifiedTransaction[] = []
+  let totalOptimizedVolumePaise = 0
+
+  let dIdx = 0
+  let cIdx = 0
+
+  while (dIdx < debtors.length && cIdx < creditors.length) {
+    const debtor = debtors[dIdx]
+    const creditor = creditors[cIdx]
+
+    const transferAmount = Math.min(debtor.amount, creditor.amount)
+
+    if (transferAmount > 0) {
+      simplifiedTransactions.push({
+        fromUserId: debtor.userId,
+        toUserId: creditor.userId,
+        amountPaise: transferAmount,
+      })
+      totalOptimizedVolumePaise += transferAmount
+
+      debtor.amount -= transferAmount
+      creditor.amount -= transferAmount
+    }
+
+    if (debtor.amount === 0) dIdx++
+    if (creditor.amount === 0) cIdx++
+  }
+
+  return {
+    simplifiedTransactions,
+    originalTransactionCount,
+    optimizedTransactionCount: simplifiedTransactions.length,
+    totalOriginalVolumePaise,
+    totalOptimizedVolumePaise,
+  }
+}

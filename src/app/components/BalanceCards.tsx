@@ -1,8 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Sparkles } from "lucide-react"
 import Link from "next/link"
+import SmartSettleModal from "@/components/settlement/SmartSettleModal"
+import { getSmartSettlementPlanAction } from "@/actions/settlement"
 
 type DetailedBalance = {
   userId: string
@@ -20,6 +22,22 @@ type Props = {
 
 export default function BalanceCards({ totalUserOwes, totalOwedToUser, detailedBalances, privacyMode = false }: Props) {
   const [expandedCard, setExpandedCard] = useState<'owe' | 'owed' | null>(null)
+  const [isSmartModalOpen, setIsSmartModalOpen] = useState(false)
+  const [smartPlan, setSmartPlan] = useState<any>(null)
+  const [isLoadingPlan, setIsLoadingPlan] = useState(false)
+
+  const handleOpenSmartSettle = async () => {
+    setIsSmartModalOpen(true)
+    setIsLoadingPlan(true)
+    try {
+      const plan = await getSmartSettlementPlanAction(null)
+      setSmartPlan(plan)
+    } catch (e) {
+      console.error("Failed to load smart plan:", e)
+    } finally {
+      setIsLoadingPlan(false)
+    }
+  }
 
   const oweBalances = detailedBalances.filter(b => b.type === 'USER_OWES')
   const owedBalances = detailedBalances.filter(b => b.type === 'OWED_TO_USER')
@@ -137,6 +155,43 @@ export default function BalanceCards({ totalUserOwes, totalOwedToUser, detailedB
           )}
         </div>
       </div>
+
+      {/* Smart Settle Button */}
+      {(totalUserOwes > 0 || totalOwedToUser > 0) && (
+        <button
+          onClick={handleOpenSmartSettle}
+          className="w-full bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent hover:from-amber-500/25 border border-amber-500/30 rounded-2xl p-3 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-xs"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-400 flex items-center justify-center">
+              <Sparkles size={16} />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-1.5">
+                Smart Settle
+                <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full">
+                  Simplify Debts
+                </span>
+              </p>
+              <p className="text-[11px] text-gray-500 dark:text-zinc-400">
+                View optimized multi-party settlement plan
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform mr-1">
+            Review →
+          </span>
+        </button>
+      )}
+
+      {/* Smart Settle Modal */}
+      <SmartSettleModal
+        isOpen={isSmartModalOpen}
+        onClose={() => setIsSmartModalOpen(false)}
+        plan={smartPlan}
+        isLoading={isLoadingPlan}
+        onRefresh={handleOpenSmartSettle}
+      />
     </div>
   )
 }

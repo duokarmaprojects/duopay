@@ -8,6 +8,7 @@ import DeleteExpenseButton from "./DeleteExpenseButton"
 import GroupActions from "./GroupActions"
 import { ExpenseIcon } from "@/components/expenses/ExpenseIcon"
 import { GroupIcon } from "@/components/ui/GroupIcon"
+import GroupSmartSettleButton from "./GroupSmartSettleButton"
 
 export default async function GroupPage({ params }: { params: { id: string } }) {
   const session = await auth()
@@ -102,6 +103,8 @@ export default async function GroupPage({ params }: { params: { id: string } }) 
             })}
           </div>
         )}
+
+        <GroupSmartSettleButton groupId={group.id} />
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 pb-24">

@@ -103,13 +103,22 @@ export default function DashboardView({
 
       {/* Main Content Area */}
       <div className="flex-1 px-6 py-6">
-        <Link 
-          href="/expenses/add" 
-          className="w-full flex items-center justify-center gap-2 bg-black dark:bg-white text-white dark:text-black h-[52px] rounded-xl font-bold text-sm mb-8 active:scale-[0.98] transition-transform shadow-sm"
-        >
-          <Plus size={18} strokeWidth={2.5} />
-          Add Expense
-        </Link>
+        <div className="grid grid-cols-2 gap-3 mb-8">
+          <Link 
+            href="/expenses/add" 
+            className="flex items-center justify-center gap-2 bg-black dark:bg-white text-white dark:text-black h-[50px] rounded-2xl font-bold text-xs active:scale-[0.98] transition-transform shadow-xs"
+          >
+            <Plus size={16} strokeWidth={2.5} />
+            <span>Add Expense</span>
+          </Link>
+          <Link 
+            href="/friends" 
+            className="flex items-center justify-center gap-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-zinc-100 h-[50px] rounded-2xl font-bold text-xs active:scale-[0.98] transition-transform shadow-xs hover:border-gray-300 dark:hover:border-zinc-700"
+          >
+            <Users size={16} />
+            <span>Friends</span>
+          </Link>
+        </div>
 
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Recent Groups</h2>

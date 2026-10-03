@@ -21,6 +21,8 @@ export type NotificationType =
   | "REFERRAL_MILESTONE_COMPLETED"
   | "RECURRING_EXPENSE_CREATED"
   | "RECURRING_EXPENSE_REMINDER"
+  | "FRIEND_REQUEST_RECEIVED"
+  | "FRIEND_REQUEST_ACCEPTED"
   | "SYSTEM";
 
 export interface PushNotificationPayload {

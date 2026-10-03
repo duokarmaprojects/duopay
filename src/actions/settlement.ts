@@ -276,3 +276,19 @@ export async function recordSettlement(formData: FormData) {
     redirect("/")
   }
 }
+
+/**
+ * Server Action to fetch or verify a smart simplified settlement plan.
+ * Returns the optimized transactions and detects staleness.
+ */
+export async function getSmartSettlementPlanAction(groupId?: string | null) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  const { generateSmartSettlementPlan } = await import("@/services/balance")
+  return generateSmartSettlementPlan({
+    userId: session.user.id,
+    groupId: groupId || null,
+  })
+}
+

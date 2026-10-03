@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateEqualSplit, calculateNetBalances } from './money'
+import { calculateEqualSplit, calculateNetBalances, simplifyDebts } from './money'
 
 describe('Domain: Money calculations', () => {
   describe('calculateEqualSplit', () => {
@@ -79,6 +79,62 @@ describe('Domain: Money calculations', () => {
       expect(netPositions['A']['B']).toBe(-30000)
       // B is owed 30000 by A
       expect(netPositions['B']['A']).toBe(30000)
+    })
+  })
+
+  describe('simplifyDebts (Smart Settle)', () => {
+    it('simplifies triangular debt correctly: Rahul owes Moiz ₹500, Sara owes Moiz ₹300, Moiz owes Ali ₹200', () => {
+      // Rahul -> Moiz 50000
+      // Sara -> Moiz 30000
+      // Moiz -> Ali 20000
+      const expenses = [
+        {
+          payerId: 'Moiz',
+          participants: [
+            { userId: 'Rahul', share: 50000 },
+            { userId: 'Moiz', share: 0 },
+          ],
+        },
+        {
+          payerId: 'Moiz',
+          participants: [
+            { userId: 'Sara', share: 30000 },
+            { userId: 'Moiz', share: 0 },
+          ],
+        },
+        {
+          payerId: 'Ali',
+          participants: [
+            { userId: 'Moiz', share: 20000 },
+            { userId: 'Ali', share: 0 },
+          ],
+        },
+      ]
+
+      const { simplifiedTransactions, originalTransactionCount } = simplifyDebts(expenses, [])
+
+      expect(originalTransactionCount).toBe(3)
+      // Net balances:
+      // Rahul: -50000
+      // Sara: -30000
+      // Moiz: +50000 +30000 -20000 = +60000
+      // Ali: +20000
+      // Sum of net balances = -50000 - 30000 + 60000 + 20000 = 0 (Conservation of money)
+
+      const totalTransferred = simplifiedTransactions.reduce((acc, t) => acc + t.amountPaise, 0)
+      expect(totalTransferred).toBe(80000)
+
+      // Verified: Rahul and Sara pay Moiz and Ali directly without intermediary debt inflation
+      for (const t of simplifiedTransactions) {
+        expect(['Rahul', 'Sara']).toContain(t.fromUserId)
+        expect(['Moiz', 'Ali']).toContain(t.toUserId)
+      }
+    })
+
+    it('returns empty simplified transactions when all balances are settled', () => {
+      const { simplifiedTransactions, optimizedTransactionCount } = simplifyDebts([], [])
+      expect(simplifiedTransactions).toEqual([])
+      expect(optimizedTransactionCount).toBe(0)
     })
   })
 })

@@ -26,6 +26,9 @@ export type SecurityEventType =
   | "RATE_LIMIT_TRIGGERED"
   | "MALICIOUS_INPUT_BLOCKED"
   | "PUSH_SUBSCRIPTION_CHANGED"
+  | "FRIEND_REQUEST_SENT"
+  | "FRIEND_REQUEST_ACCEPTED"
+  | "FRIEND_REMOVED"
 
 export interface SecurityEventData {
   type: SecurityEventType
