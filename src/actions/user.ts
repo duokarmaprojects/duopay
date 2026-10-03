@@ -11,6 +11,7 @@ import { validateUpiFormat } from "@/domain/upi"
 import { verifyUpiId } from "@/services/upiVerification"
 
 const profileSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").max(50, "Name is too long").optional(),
   phone: z.string().min(10, "Phone number is too short").max(20, "Phone number is too long"),
   upiId: z.string().min(5, "UPI ID is too short"),
 })
@@ -21,10 +22,15 @@ export async function completeProfile(formData: FormData) {
     throw new Error("Not authenticated")
   }
 
+  const rawName = (formData.get("name") as string | null)?.trim()
   const rawPhone = formData.get("phone") as string
   const rawUpiId = formData.get("upiId") as string
 
-  const parsed = profileSchema.safeParse({ phone: rawPhone, upiId: rawUpiId })
+  const parsed = profileSchema.safeParse({
+    name: rawName || undefined,
+    phone: rawPhone,
+    upiId: rawUpiId,
+  })
 
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0].message)
@@ -40,6 +46,7 @@ export async function completeProfile(formData: FormData) {
   await prisma.user.update({
     where: { id: session.user.id },
     data: {
+      ...(parsed.data.name ? { name: parsed.data.name } : {}),
       phone,
       upiId: format.normalized,
       upiVerified: false,

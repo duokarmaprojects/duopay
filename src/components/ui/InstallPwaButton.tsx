@@ -2,7 +2,12 @@
 import { useState, useEffect } from "react"
 import { Download } from "lucide-react"
 
-export function InstallPwaButton() {
+interface InstallPwaButtonProps {
+  className?: string
+  label?: string
+}
+
+export function InstallPwaButton({ className, label = "Install DuoPay" }: InstallPwaButtonProps) {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [isStandalone, setIsStandalone] = useState(true)
 
@@ -52,10 +57,13 @@ export function InstallPwaButton() {
     <button
       type="button"
       onClick={handleInstallClick}
-      className="mt-6 w-full flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-semibold py-3 px-4 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 shadow-sm"
+      className={
+        className ||
+        "w-full flex items-center justify-center gap-2 bg-transparent hover:bg-zinc-900/60 text-zinc-400 hover:text-zinc-200 font-medium py-3 px-4 rounded-xl transition-all border border-zinc-800/80 text-xs active:scale-[0.99]"
+      }
     >
-      <Download size={18} />
-      Install DuoPay App
+      <Download size={14} className="opacity-70" />
+      {label}
     </button>
   )
 }

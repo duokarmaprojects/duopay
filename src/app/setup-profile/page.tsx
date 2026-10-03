@@ -1,29 +1,48 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
+import { prisma } from "@/lib/db"
 import { completeProfile } from "@/actions/user"
 
 export default async function SetupProfilePage() {
   const session = await auth()
   
-  if (!session) {
+  if (!session?.user?.id) {
     redirect('/login')
   }
 
-  const user = session.user as any
-  if (user?.phone && user?.upiId) {
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id }
+  })
+
+  if (user?.phone && user?.upiId && user?.name && user.name !== 'New User') {
     redirect('/')
   }
 
   return (
-    <div className="flex flex-col flex-1 p-6 bg-white pt-12">
-      <h1 className="text-2xl font-bold mb-2">Welcome to DuoPay</h1>
-      <p className="text-gray-500 mb-8">
-        Let's set up your profile so friends can easily split expenses with you.
+    <div className="flex flex-col flex-1 p-6 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 pt-12 min-h-screen">
+      <h1 className="text-2xl font-bold mb-2 tracking-tight">Welcome to DuoPay</h1>
+      <p className="text-zinc-500 dark:text-zinc-400 mb-8 text-sm">
+        Let&apos;s set up your profile so friends can easily split expenses with you.
       </p>
 
-      <form action={completeProfile} className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <label htmlFor="phone" className="text-sm font-medium text-gray-700">
+      <form action={completeProfile} className="flex flex-col gap-5">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="name" className="text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
+            Full Name
+          </label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            defaultValue={user?.name && user.name !== "New User" ? user.name : ""}
+            placeholder="e.g. Rahul Sharma"
+            required
+            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all text-base font-medium"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="phone" className="text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
             Phone Number
           </label>
           <input
@@ -34,30 +53,31 @@ export default async function SetupProfilePage() {
             readOnly={!!user?.phone}
             placeholder="e.g. +91 9876543210"
             required
-            className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent read-only:bg-gray-100 read-only:text-gray-500"
+            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white read-only:opacity-60 read-only:cursor-not-allowed transition-all text-base font-medium"
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label htmlFor="upiId" className="text-sm font-medium text-gray-700">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="upiId" className="text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
             UPI ID
           </label>
           <input
             id="upiId"
             name="upiId"
             type="text"
-            placeholder="e.g. name@bank"
+            defaultValue={user?.upiId || ""}
+            placeholder="e.g. name@okhdfcbank"
             required
-            className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all text-base font-medium font-mono"
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Format: username@handle (e.g. name@okhdfcbank). Newly added UPI IDs require verification before being marked as verified payment destinations.
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+            Format: username@handle (e.g. rahul@okaxis). Used for receiving settlements.
           </p>
         </div>
 
         <button
           type="submit"
-          className="mt-4 w-full bg-black text-white font-semibold py-3.5 px-4 rounded-xl active:bg-gray-800 transition-colors"
+          className="mt-4 w-full bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black font-semibold py-3.5 px-4 rounded-xl active:scale-[0.99] transition-all shadow-sm"
         >
           Complete Setup
         </button>

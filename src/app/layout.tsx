@@ -57,10 +57,10 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.className} bg-gray-50 text-gray-900 antialiased min-h-screen flex flex-col transition-colors duration-200 ease-in-out`}>
+      <body className={`${inter.className} bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 antialiased min-h-screen flex flex-col transition-colors duration-200 ease-in-out`}>
         <ThemeProvider>
           <PwaProvider>
-            <main className="flex-1 flex flex-col w-full max-w-md mx-auto bg-white shadow-sm min-h-screen overflow-x-hidden pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] relative transition-colors duration-200 ease-in-out">
+            <main className="flex-1 flex flex-col w-full max-w-md mx-auto bg-white dark:bg-zinc-950 shadow-sm min-h-screen overflow-x-hidden pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] relative transition-colors duration-200 ease-in-out">
               {children}
             </main>
           </PwaProvider>

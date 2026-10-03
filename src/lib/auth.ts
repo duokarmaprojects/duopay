@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/db"
 import { authConfig } from "./auth.config"
+import { normalizePhoneNumber } from "@/domain/phone"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
@@ -18,16 +19,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.phone || typeof credentials.phone !== "string") return null
         
-        // Find or create user
+        const rawPhone = credentials.phone.trim()
+        const normalized = normalizePhoneNumber(rawPhone)
+
+        // Find existing user by exact match or normalized format
         let user = await prisma.user.findFirst({
-          where: { phone: credentials.phone }
+          where: {
+            OR: [
+              { phone: rawPhone },
+              ...(normalized ? [{ phone: normalized }] : []),
+              ...(normalized?.startsWith("+91") ? [{ phone: normalized.slice(3) }] : [])
+            ]
+          }
         })
 
         if (!user) {
+          const finalPhone = normalized || rawPhone
           user = await prisma.user.create({
             data: {
-              phone: credentials.phone,
-              name: typeof credentials.name === "string" ? credentials.name : "New User"
+              phone: finalPhone,
+              name: typeof credentials.name === "string" && credentials.name.trim()
+                ? credentials.name.trim()
+                : "New User"
             }
           })
         }
