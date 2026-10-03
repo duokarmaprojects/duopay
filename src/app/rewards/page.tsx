@@ -8,7 +8,6 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  HelpCircle,
 } from "lucide-react"
 import { getCashbackSummary, getCashbackHistory } from "@/actions/cashback"
 import CashbackCard from "@/components/rewards/CashbackCard"
@@ -115,42 +114,6 @@ export default async function RewardsPage() {
           )}
         </section>
 
-        {/* 3. Cashback Policy & Scaling Tiers */}
-        <section className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <HelpCircle size={16} className="text-gray-400 dark:text-zinc-500" />
-            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-zinc-500">
-              How You Earn Cashback
-            </h2>
-          </div>
-
-          <p className="text-xs text-gray-600 dark:text-zinc-400 leading-relaxed mb-3">
-            Every genuine, gateway-verified payment automatically earns instant cashback deposited into your rewards ledger.
-          </p>
-
-          <div className="divide-y divide-gray-50 dark:divide-zinc-800/80 rounded-xl bg-gray-50 dark:bg-zinc-800/40 p-2.5 border border-gray-100 dark:border-zinc-800 text-xs">
-            <div className="flex justify-between py-1.5 px-2">
-              <span className="text-gray-500 dark:text-zinc-400">Under ₹100</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">+₹0.10</span>
-            </div>
-            <div className="flex justify-between py-1.5 px-2">
-              <span className="text-gray-500 dark:text-zinc-400">₹100 – ₹499</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">+₹0.15</span>
-            </div>
-            <div className="flex justify-between py-1.5 px-2">
-              <span className="text-gray-500 dark:text-zinc-400">₹500 – ₹999</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">+₹0.25</span>
-            </div>
-            <div className="flex justify-between py-1.5 px-2">
-              <span className="text-gray-500 dark:text-zinc-400">₹1,000 – ₹1,999</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">+₹0.35</span>
-            </div>
-            <div className="flex justify-between py-1.5 px-2">
-              <span className="text-gray-500 dark:text-zinc-400">₹2,000 & above</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">+₹0.50</span>
-            </div>
-          </div>
-        </section>
 
         {/* 4. Auditable Cashback Ledger History */}
         <section className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 p-4 shadow-sm">
