@@ -75,11 +75,11 @@ export default function CashbackCard({
               </span>
               {isUnlocked && (
                 <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-500 text-white rounded-full">
-                  Unlocked 🎉
+                  Unlocked ✨
                 </span>
               )}
             </div>
-            <h3 className="font-bold text-sm text-gray-900 dark:text-white">
+            <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
               Cashback Balance
             </h3>
           </div>
@@ -89,10 +89,10 @@ export default function CashbackCard({
       {/* Balance Display */}
       <div className="mt-2 mb-3">
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white">
+          <span className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
             {formattedBalance}
           </span>
-          <span className="text-xs text-gray-500 dark:text-zinc-400 font-medium">
+          <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
             Cashback Earned
           </span>
         </div>
@@ -101,10 +101,10 @@ export default function CashbackCard({
       {/* Progress Bar & Threshold */}
       <div className="space-y-1.5 mb-4">
         <div className="flex justify-between text-xs font-medium">
-          <span className="text-gray-600 dark:text-zinc-300">
-            {isUnlocked ? "🎉 Ready to redeem" : `${formattedRemaining} more to unlock redemption`}
+          <span className="text-zinc-600 dark:text-zinc-300">
+            {isUnlocked ? "✨ Ready to redeem" : `${formattedRemaining} more to unlock redemption`}
           </span>
-          <span className="text-gray-400 dark:text-zinc-500 font-mono text-[11px]">
+          <span className="text-zinc-500 dark:text-zinc-300 font-mono text-[11px]">
             {formattedBalance} / ₹25.00
           </span>
         </div>
@@ -151,7 +151,7 @@ export default function CashbackCard({
           <button
             onClick={handleRedeem}
             disabled={isPending || !summary.upiId}
-            className="w-full py-2.5 px-4 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-gray-900 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2.5 px-4 bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPending ? (
               <>
@@ -171,7 +171,7 @@ export default function CashbackCard({
 
         {showHistoryLink && (
           <div className="flex items-center justify-between text-xs pt-1">
-            <span className="text-[11px] text-gray-500 dark:text-zinc-400">
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
               Earn ₹0.10–₹0.50 on every verified payment
             </span>
             <Link

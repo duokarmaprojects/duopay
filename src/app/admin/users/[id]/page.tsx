@@ -56,7 +56,7 @@ export default async function AdminUserDetailPage({
           <span className="sr-only">Back to users</span>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">
             {user.name || 'Unnamed User'}
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -74,7 +74,7 @@ export default async function AdminUserDetailPage({
         {/* Profile Card */}
         <div className="col-span-1 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <div className="border-b border-gray-200 dark:border-gray-800 px-4 py-4 sm:px-6">
-            <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white flex items-center gap-2">
+            <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-zinc-100 flex items-center gap-2">
               <User className="h-5 w-5 text-gray-500" />
               Profile details
             </h3>
@@ -82,23 +82,23 @@ export default async function AdminUserDetailPage({
           <div className="px-4 py-5 sm:p-6 space-y-4">
             <div>
               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">ID</dt>
-              <dd className="mt-1 text-sm text-gray-900 dark:text-white font-mono">{user.id}</dd>
+              <dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100 font-mono">{user.id}</dd>
             </div>
             <div>
               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Name</dt>
-              <dd className="mt-1 text-sm text-gray-900 dark:text-white">{user.name || '-'}</dd>
+              <dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100">{user.name || '-'}</dd>
             </div>
             <div>
               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</dt>
-              <dd className="mt-1 text-sm text-gray-900 dark:text-white">{user.email || '-'}</dd>
+              <dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100">{user.email || '-'}</dd>
             </div>
             <div>
               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Phone</dt>
-              <dd className="mt-1 text-sm text-gray-900 dark:text-white">{user.phone || '-'}</dd>
+              <dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100">{user.phone || '-'}</dd>
             </div>
             <div>
               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Last Updated</dt>
-              <dd className="mt-1 text-sm text-gray-900 dark:text-white">{new Date(user.updatedAt).toLocaleString()}</dd>
+              <dd className="mt-1 text-sm text-gray-900 dark:text-zinc-100">{new Date(user.updatedAt).toLocaleString()}</dd>
             </div>
           </div>
         </div>
@@ -108,7 +108,7 @@ export default async function AdminUserDetailPage({
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <div className="border-b border-gray-200 dark:border-gray-800 px-4 py-4 sm:px-6">
-                <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white flex items-center gap-2">
+                <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-zinc-100 flex items-center gap-2">
                   <FolderGit2 className="h-5 w-5 text-gray-500" />
                   Groups ({user.groupMembers.length})
                 </h3>
@@ -116,7 +116,7 @@ export default async function AdminUserDetailPage({
               <div className="px-4 py-5 sm:p-6">
                 <ul className="space-y-3">
                   {user.groupMembers.slice(0, 5).map((ug) => (
-                    <li key={ug.groupId} className="text-sm text-gray-900 dark:text-white">
+                    <li key={ug.groupId} className="text-sm text-gray-900 dark:text-zinc-100">
                       {ug.group.name}
                     </li>
                   ))}
@@ -129,7 +129,7 @@ export default async function AdminUserDetailPage({
 
             <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <div className="border-b border-gray-200 dark:border-gray-800 px-4 py-4 sm:px-6">
-                <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white flex items-center gap-2">
+                <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-zinc-100 flex items-center gap-2">
                   <Receipt className="h-5 w-5 text-gray-500" />
                   Recent Expenses Paid
                 </h3>
@@ -137,7 +137,7 @@ export default async function AdminUserDetailPage({
               <div className="px-4 py-5 sm:p-6">
                 <ul className="space-y-3">
                   {user.expensesPaid.map((exp) => (
-                    <li key={exp.id} className="text-sm text-gray-900 dark:text-white flex justify-between">
+                    <li key={exp.id} className="text-sm text-gray-900 dark:text-zinc-100 flex justify-between">
                       <span className="truncate pr-2">{exp.description}</span>
                       <span className="font-medium">${Number(exp.amount).toFixed(2)}</span>
                     </li>
@@ -153,7 +153,7 @@ export default async function AdminUserDetailPage({
           {/* Activity Log */}
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <div className="border-b border-gray-200 dark:border-gray-800 px-4 py-4 sm:px-6">
-              <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white flex items-center gap-2">
+              <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-zinc-100 flex items-center gap-2">
                 <ActivityIcon className="h-5 w-5 text-gray-500" />
                 Recent Activity
               </h3>
@@ -166,7 +166,7 @@ export default async function AdminUserDetailPage({
                       {new Date(event.createdAt).toLocaleDateString()}
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      <div className="text-sm font-medium text-gray-900 dark:text-zinc-100">
                         {event.eventType}
                       </div>
                       {event.metadata && (

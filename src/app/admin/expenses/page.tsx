@@ -30,7 +30,7 @@ export default async function AdminExpensesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Expense Analytics</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Expense Analytics</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Track expense volume and feature usage.
         </p>
@@ -45,7 +45,7 @@ export default async function AdminExpensesPage() {
             <p className="ml-16 truncate text-sm font-medium text-gray-500 dark:text-gray-400">Total Expenses Logged</p>
           </dt>
           <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
-            <p className="text-2xl font-semibold text-gray-900 dark:text-white">{totalExpenses}</p>
+            <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{totalExpenses}</p>
           </dd>
         </div>
         
@@ -57,7 +57,7 @@ export default async function AdminExpensesPage() {
             <p className="ml-16 truncate text-sm font-medium text-gray-500 dark:text-gray-400">Total Volume ($)</p>
           </dt>
           <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
-            <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+            <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
               ${(Number(totalExpenseVolume._sum.amount || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </p>
           </dd>
@@ -71,7 +71,7 @@ export default async function AdminExpensesPage() {
             <p className="ml-16 truncate text-sm font-medium text-gray-500 dark:text-gray-400">Smart Split Uses</p>
           </dt>
           <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
-            <p className="text-2xl font-semibold text-gray-900 dark:text-white">{smartSplitUsage}</p>
+            <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{smartSplitUsage}</p>
           </dd>
         </div>
       </div>

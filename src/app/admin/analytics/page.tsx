@@ -27,7 +27,7 @@ export default async function AdminAnalyticsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Product Analytics</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Product Analytics</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Feature usage, retention, and funnel metrics.
         </p>
@@ -37,7 +37,7 @@ export default async function AdminAnalyticsPage() {
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <div className="border-b border-gray-200 dark:border-gray-800 px-4 py-4 sm:px-6 flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-gray-500" />
-            <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white">Top Events</h3>
+            <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-zinc-100">Top Events</h3>
           </div>
           <div className="px-4 py-5 sm:p-6">
             <div className="space-y-4">
@@ -57,7 +57,7 @@ export default async function AdminAnalyticsPage() {
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <div className="border-b border-gray-200 dark:border-gray-800 px-4 py-4 sm:px-6 flex items-center gap-2">
             <LineChart className="h-5 w-5 text-gray-500" />
-            <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white">Funnel Drop-off (Simulated)</h3>
+            <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-zinc-100">Funnel Drop-off (Simulated)</h3>
           </div>
           <div className="px-4 py-5 sm:p-6">
             <div className="space-y-4">

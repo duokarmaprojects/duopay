@@ -53,7 +53,7 @@ export default async function AdminUsersPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Users</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Users</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Manage your users, view their details, and monitor activity.
           </p>
@@ -71,7 +71,7 @@ export default async function AdminUsersPage({
             name="q"
             defaultValue={q}
             placeholder="Search by name, email, or phone..."
-            className="block w-full rounded-md border-0 py-1.5 pl-10 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700 dark:focus:ring-indigo-500"
+            className="block w-full rounded-md border-0 py-1.5 pl-10 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-zinc-100 dark:ring-gray-700 dark:focus:ring-indigo-500"
           />
         </form>
       </div>
@@ -82,13 +82,13 @@ export default async function AdminUsersPage({
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
             <thead className="bg-gray-50 dark:bg-gray-800/50">
               <tr>
-                <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-6">
+                <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-zinc-100 sm:pl-6">
                   User
                 </th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-zinc-100">
                   Role
                 </th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-zinc-100">
                   Joined
                 </th>
                 <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
@@ -105,7 +105,7 @@ export default async function AdminUsersPage({
                         {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || '?'}
                       </div>
                       <div className="ml-4">
-                        <div className="font-medium text-gray-900 dark:text-white">{user.name || 'Unnamed'}</div>
+                        <div className="font-medium text-gray-900 dark:text-zinc-100">{user.name || 'Unnamed'}</div>
                         <div className="text-gray-500 dark:text-gray-400">{user.email || user.phone}</div>
                       </div>
                     </div>
@@ -170,7 +170,7 @@ export default async function AdminUsersPage({
                     &larr;
                   </Link>
                   {/* Simplistic pagination for now */}
-                  <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:outline-offset-0 dark:text-white dark:ring-gray-700">
+                  <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:outline-offset-0 dark:text-zinc-100 dark:ring-gray-700">
                     Page {page} of {totalPages}
                   </span>
                   <Link

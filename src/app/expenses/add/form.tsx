@@ -178,7 +178,7 @@ export function AddExpenseForm({ groupId, members, currentUserId }: { groupId: s
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What was this for?"
               required
-              className="flex-1 bg-transparent border-none outline-none text-xl dark:text-white placeholder:text-gray-400 py-3 pr-4"
+              className="flex-1 bg-transparent border-none outline-none text-xl dark:text-zinc-100 placeholder:text-gray-400 py-3 pr-4"
             />
           </div>
 

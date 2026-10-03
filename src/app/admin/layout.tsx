@@ -34,7 +34,7 @@ export default async function AdminLayout({
       {/* Sidebar */}
       <div className="w-64 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hidden md:flex md:flex-col">
         <div className="flex h-16 shrink-0 items-center px-6">
-          <Link href="/admin" className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+          <Link href="/admin" className="text-xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">
             DuoPay Admin
           </Link>
         </div>

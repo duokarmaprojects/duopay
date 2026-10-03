@@ -27,7 +27,7 @@ export default async function AdminSettlementsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Settlements</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Settlements</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Monitor balance settlements between users.
         </p>
@@ -42,7 +42,7 @@ export default async function AdminSettlementsPage() {
             <p className="ml-16 truncate text-sm font-medium text-gray-500 dark:text-gray-400">Total Initiated</p>
           </dt>
           <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
-            <p className="text-2xl font-semibold text-gray-900 dark:text-white">{totalSettlements}</p>
+            <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{totalSettlements}</p>
           </dd>
         </div>
         
@@ -54,7 +54,7 @@ export default async function AdminSettlementsPage() {
             <p className="ml-16 truncate text-sm font-medium text-gray-500 dark:text-gray-400">Completed</p>
           </dt>
           <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
-            <p className="text-2xl font-semibold text-gray-900 dark:text-white">{completedSettlements}</p>
+            <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{completedSettlements}</p>
           </dd>
         </div>
 
@@ -66,7 +66,7 @@ export default async function AdminSettlementsPage() {
             <p className="ml-16 truncate text-sm font-medium text-gray-500 dark:text-gray-400">Pending</p>
           </dt>
           <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
-            <p className="text-2xl font-semibold text-gray-900 dark:text-white">{pendingSettlements}</p>
+            <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{pendingSettlements}</p>
           </dd>
         </div>
 
@@ -78,7 +78,7 @@ export default async function AdminSettlementsPage() {
             <p className="ml-16 truncate text-sm font-medium text-gray-500 dark:text-gray-400">Total Volume Settled</p>
           </dt>
           <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
-            <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+            <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
               ${(Number(totalSettledVolume._sum.amount || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </p>
           </dd>

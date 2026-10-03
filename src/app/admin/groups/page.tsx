@@ -42,7 +42,7 @@ export default async function AdminGroupsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Group Analytics</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Group Analytics</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Monitor group creation and engagement metrics.
         </p>
@@ -57,7 +57,7 @@ export default async function AdminGroupsPage() {
             <p className="ml-16 truncate text-sm font-medium text-gray-500 dark:text-gray-400">Total Groups</p>
           </dt>
           <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
-            <p className="text-2xl font-semibold text-gray-900 dark:text-white">{totalGroups}</p>
+            <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{totalGroups}</p>
           </dd>
         </div>
         
@@ -69,7 +69,7 @@ export default async function AdminGroupsPage() {
             <p className="ml-16 truncate text-sm font-medium text-gray-500 dark:text-gray-400">Active Groups (30d)</p>
           </dt>
           <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
-            <p className="text-2xl font-semibold text-gray-900 dark:text-white">{activeGroups}</p>
+            <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{activeGroups}</p>
           </dd>
         </div>
 
@@ -81,7 +81,7 @@ export default async function AdminGroupsPage() {
             <p className="ml-16 truncate text-sm font-medium text-gray-500 dark:text-gray-400">Avg Members / Group</p>
           </dt>
           <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
-            <p className="text-2xl font-semibold text-gray-900 dark:text-white">{avgMembersPerGroup.toFixed(1)}</p>
+            <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{avgMembersPerGroup.toFixed(1)}</p>
           </dd>
         </div>
       </div>

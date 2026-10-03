@@ -37,7 +37,7 @@ export default function FriendsListClient({ initialFriends }: { initialFriends: 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search friends by name or UPI..."
-            className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-gray-900 dark:text-zinc-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all shadow-xs"
+            className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-gray-900 dark:text-zinc-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-100 transition-all shadow-xs"
           />
         </div>
       )}

@@ -86,20 +86,31 @@ export default async function SettlePage({
         </a>
 
         <div className="w-full max-w-sm border-t border-gray-100 pt-6">
-          <p className="text-center text-sm font-medium text-gray-500 mb-4">Did you complete the payment?</p>
+          <div className="mb-4 p-3 bg-amber-50 rounded-xl border border-amber-100 flex flex-col gap-1.5">
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={16} className="text-amber-600 mt-0.5 shrink-0" />
+              <p className="text-xs text-amber-800 font-medium">
+                Automatic payment verification is not available for direct peer-to-peer UPI transfers.
+              </p>
+            </div>
+            <p className="text-xs text-amber-700/80 pl-6">
+              Please manually confirm once you have completed the payment in your UPI app.
+            </p>
+          </div>
+
           <form action={recordSettlement} className="flex gap-3">
             <input type="hidden" name="receiverId" value={userId} />
             <input type="hidden" name="amountPaise" value={amountToPay} />
             {groupId && <input type="hidden" name="groupId" value={groupId} />}
             <button
               type="submit"
-              className="flex-1 bg-black text-white font-semibold py-3 px-4 rounded-xl active:bg-gray-800"
+              className="flex-1 bg-black text-white font-semibold py-3 px-4 rounded-xl active:bg-gray-800 text-sm"
             >
-              Yes, Mark as Paid
+              Manually Confirm Payment
             </button>
             <Link 
               href={groupId ? `/groups/${groupId}` : "/"}
-              className="flex-1 bg-gray-100 text-gray-900 font-semibold py-3 px-4 rounded-xl text-center active:bg-gray-200"
+              className="flex-1 bg-gray-100 text-gray-900 font-semibold py-3 px-4 rounded-xl text-center active:bg-gray-200 text-sm"
             >
               Not Yet
             </Link>

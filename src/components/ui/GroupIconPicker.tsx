@@ -53,9 +53,9 @@ export function GroupIconPicker({ name = "image", defaultValue = "" }: { name?: 
           {hasSelection ? <Pencil size={14} /> : <Plus size={14} />}
         </div>
 
-        <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-white dark:bg-[#111820] shadow-sm border border-gray-100 dark:border-gray-800 text-gray-900 dark:text-white">
+        <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-white dark:bg-[#111820] shadow-sm border border-gray-100 dark:border-gray-800 text-gray-900 dark:text-zinc-100">
           {hasSelection && currentIconDef ? (
-            <currentIconDef.icon size={24} strokeWidth={2} />
+            <currentIconDef.icon size={24} strokeWidth={2} className="text-gray-900 dark:text-zinc-100" />
           ) : (
             <Plus size={24} strokeWidth={2} className="text-gray-400" />
           )}
@@ -77,7 +77,7 @@ export function GroupIconPicker({ name = "image", defaultValue = "" }: { name?: 
             onClick={e => e.stopPropagation()}
           >
             <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-[#111820] shrink-0">
-              <h2 className="font-bold text-gray-900 dark:text-white text-lg">Choose an icon</h2>
+              <h2 className="font-bold text-gray-900 dark:text-zinc-100 text-lg">Choose an icon</h2>
               <button 
                 onClick={() => setIsOpen(false)}
                 className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-50 dark:bg-gray-900 rounded-full transition-colors shadow-sm border border-gray-200 dark:border-gray-800"
@@ -94,7 +94,7 @@ export function GroupIconPicker({ name = "image", defaultValue = "" }: { name?: 
                   placeholder="Search icons..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-[#1a222c] border border-gray-200 dark:border-gray-800 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white text-sm dark:text-white"
+                  className="w-full bg-gray-50 dark:bg-[#1a222c] border border-gray-200 dark:border-gray-800 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-100 text-sm dark:text-zinc-100"
                   autoFocus
                 />
               </div>

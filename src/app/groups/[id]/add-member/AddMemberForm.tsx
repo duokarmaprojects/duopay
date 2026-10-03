@@ -24,8 +24,12 @@ export default function AddMemberForm({
     
     startTransition(async () => {
       try {
-        await addMemberToGroup(groupId, phoneOrUpi)
-        router.push(`/groups/${groupId}`)
+        const result = await addMemberToGroup(groupId, phoneOrUpi)
+        if (result?.error) {
+          setError(result.error)
+        } else {
+          router.push(`/groups/${groupId}`)
+        }
       } catch (err: any) {
         setError(err.message || "Failed to add member")
       }

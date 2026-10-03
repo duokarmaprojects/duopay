@@ -37,7 +37,7 @@ export default async function SetupProfilePage() {
             defaultValue={user?.name && user.name !== "New User" ? user.name : ""}
             placeholder="Full name"
             required
-            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all text-base font-medium [color-scheme:dark]"
+            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-100 transition-all text-base font-medium [color-scheme:dark]"
           />
         </div>
 
@@ -53,7 +53,7 @@ export default async function SetupProfilePage() {
             readOnly={!!user?.phone}
             placeholder="Phone number"
             required
-            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white read-only:opacity-60 read-only:cursor-not-allowed transition-all text-base font-medium [color-scheme:dark]"
+            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-100 read-only:opacity-60 read-only:cursor-not-allowed transition-all text-base font-medium [color-scheme:dark]"
           />
         </div>
 
@@ -68,7 +68,7 @@ export default async function SetupProfilePage() {
             defaultValue={user?.upiId && user.upiId !== "username@bank" ? user.upiId : ""}
             placeholder=""
             required
-            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all text-base font-medium font-mono [color-scheme:dark]"
+            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-100 transition-all text-base font-medium font-mono [color-scheme:dark]"
           />
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
             Format: username@handle. Used for receiving settlements.

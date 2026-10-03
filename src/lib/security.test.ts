@@ -563,9 +563,8 @@ describe("Production Security Hardening Test Suite", () => {
         { userId: "user-alice", joinedAt: new Date(2000) },
       ] as any)
 
-      await expect(deleteGroup("group-1")).rejects.toThrow(
-        "Only the group creator can delete the group"
-      )
+      const result = await deleteGroup("group-1")
+      expect(result).toEqual({ error: "Only the group creator can delete the group" })
       expect(prisma.group.delete).not.toHaveBeenCalled()
     })
 

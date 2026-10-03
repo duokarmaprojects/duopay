@@ -168,12 +168,12 @@ export default function ProfileSections({ initialSettings }: UserSettingsProps) 
                       onClick={() => handleUpdate({ currency: cur.code as any })}
                       className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-between border transition-all ${
                         settings.currency === cur.code
-                          ? "bg-white dark:bg-zinc-800 border-black dark:border-white text-gray-900 dark:text-white shadow-xs"
+                          ? "bg-white dark:bg-zinc-800 border-black dark:border-zinc-100 text-gray-900 dark:text-zinc-100 shadow-xs"
                           : "bg-white/60 dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-white"
                       }`}
                     >
                       <span>{cur.label}</span>
-                      {settings.currency === cur.code && <Check size={14} className="text-black dark:text-white" />}
+                      {settings.currency === cur.code && <Check size={14} className="text-black dark:text-zinc-100" />}
                     </button>
                   ))}
                 </div>
@@ -197,12 +197,12 @@ export default function ProfileSections({ initialSettings }: UserSettingsProps) 
                       onClick={() => handleUpdate({ defaultSplitMethod: m.id as any })}
                       className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-between border transition-all ${
                         settings.defaultSplitMethod === m.id
-                          ? "bg-white dark:bg-zinc-800 border-black dark:border-white text-gray-900 dark:text-white shadow-xs"
+                          ? "bg-white dark:bg-zinc-800 border-black dark:border-zinc-100 text-gray-900 dark:text-zinc-100 shadow-xs"
                           : "bg-white/60 dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-white"
                       }`}
                     >
                       <span>{m.label}</span>
-                      {settings.defaultSplitMethod === m.id && <Check size={14} className="text-black dark:text-white" />}
+                      {settings.defaultSplitMethod === m.id && <Check size={14} className="text-black dark:text-zinc-100" />}
                     </button>
                   ))}
                 </div>

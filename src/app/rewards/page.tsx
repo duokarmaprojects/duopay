@@ -66,7 +66,7 @@ export default async function RewardsPage() {
         {/* 2. Payout Destination Card */}
         <section className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-zinc-500">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
               Payout Destination
             </h2>
           </div>
@@ -78,17 +78,17 @@ export default async function RewardsPage() {
                   <ShieldCheck size={20} />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-900 dark:text-white font-mono">
+                  <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 font-mono">
                     {summary.upiId}
                   </p>
-                  <p className="text-[11px] text-gray-500 dark:text-zinc-400">
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     Primary Payout Address
                   </p>
                 </div>
               </div>
               <Link
                 href="/profile"
-                className="text-[11px] font-semibold text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white"
+                className="text-[11px] font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
               >
                 Change
               </Link>
@@ -119,12 +119,12 @@ export default async function RewardsPage() {
         <section className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Clock size={16} className="text-gray-400 dark:text-zinc-500" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-zinc-500">
+              <Clock size={16} className="text-zinc-400 dark:text-zinc-500" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                 Reward History
               </h2>
             </div>
-            <span className="text-[11px] font-mono text-gray-400 dark:text-zinc-500">
+            <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500">
               {history.length} records
             </span>
           </div>
@@ -134,10 +134,10 @@ export default async function RewardsPage() {
               <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center mb-3">
                 <Sparkles size={24} />
               </div>
-              <h3 className="font-bold text-sm text-gray-900 dark:text-white mb-1">
+              <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 mb-1">
                 No cashback activity yet
               </h3>
-              <p className="text-xs text-gray-500 dark:text-zinc-400 max-w-[240px]">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-[240px]">
                 Settle a balance using verified online UPI to earn your first instant cashback!
               </p>
             </div>
@@ -162,7 +162,7 @@ export default async function RewardsPage() {
                         {isDebit ? "-" : "+"}
                       </div>
                       <div>
-                        <p className="font-semibold text-xs text-gray-900 dark:text-white">
+                        <p className="font-semibold text-xs text-zinc-900 dark:text-zinc-100">
                           {item.type === "PAYMENT_CASHBACK"
                             ? "Payment Cashback"
                             : item.type === "REDEMPTION"
@@ -171,13 +171,13 @@ export default async function RewardsPage() {
                             ? "Cashback Reversal"
                             : "Adjustment"}
                         </p>
-                        <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-0.5">
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
                           {new Date(item.createdAt).toLocaleDateString("en-IN", {
                             day: "numeric",
                             month: "short",
                             year: "numeric",
                           })}
-                          {item.sourcePaymentId && ` · Payment #${item.sourcePaymentId.slice(-6)}`}
+                          {item.sourcePaymentId && ` • Payment #${item.sourcePaymentId.slice(-6)}`}
                         </p>
                       </div>
                     </div>
@@ -186,13 +186,13 @@ export default async function RewardsPage() {
                       <span
                         className={`font-bold text-xs font-mono ${
                           isDebit
-                            ? "text-gray-900 dark:text-zinc-200"
+                            ? "text-zinc-900 dark:text-zinc-100"
                             : "text-emerald-600 dark:text-emerald-400"
                         }`}
                       >
                         {item.formattedAmount}
                       </span>
-                      <p className="text-[10px] text-gray-400 dark:text-zinc-500 capitalize">
+                      <p className="text-[10px] text-zinc-400 dark:text-zinc-500 capitalize">
                         {item.status.toLowerCase()}
                       </p>
                     </div>

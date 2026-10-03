@@ -43,6 +43,7 @@ export async function createGroup(formData: FormData) {
 
   const rawName = formData.get("name") as string
   const rawImage = formData.get("image") as string | undefined
+  const idempotencyKey = formData.get("idempotencyKey") as string | undefined
 
   const name = sanitizeTextInput(rawName, 50)
   const image = rawImage ? sanitizeTextInput(rawImage, 50) : undefined
@@ -52,17 +53,53 @@ export async function createGroup(formData: FormData) {
     throw new Error(parsed.error.issues[0].message)
   }
 
-  const group = await prisma.group.create({
-    data: {
-      name: parsed.data.name,
-      image: parsed.data.image,
-      members: {
-        create: {
-          userId
+  // Idempotency check
+  if (idempotencyKey) {
+    const existingGroup = await prisma.group.findUnique({
+      where: { idempotencyKey },
+      include: { members: true }
+    })
+
+    if (existingGroup) {
+      // Ensure the authenticated user is actually a member of this group
+      // (prevents stealing an idempotency key)
+      const isMember = existingGroup.members.some(m => m.userId === userId)
+      if (!isMember) {
+        throw new Error("Unauthorized idempotency key reuse")
+      }
+      
+      // Request is a duplicate, return the existing group safely
+      redirect(`/groups/${existingGroup.id}`)
+    }
+  }
+
+  // Create new group
+  let group
+  try {
+    group = await prisma.group.create({
+      data: {
+        name: parsed.data.name,
+        image: parsed.data.image,
+        idempotencyKey: idempotencyKey || null,
+        members: {
+          create: {
+            userId
+          }
         }
       }
+    })
+  } catch (err: any) {
+    // If it fails due to a unique constraint on idempotencyKey, another concurrent request won.
+    if ((err.code === "P2002" || err.message?.includes("UNIQUE constraint failed")) && idempotencyKey) {
+      const existingGroup = await prisma.group.findUnique({
+        where: { idempotencyKey }
+      })
+      if (existingGroup) {
+        redirect(`/groups/${existingGroup.id}`)
+      }
     }
-  })
+    throw err
+  }
 
   await logSecurityEvent({
     type: "GROUP_CREATED",
@@ -91,12 +128,12 @@ export async function addMemberToGroup(groupId: string, phoneOrUpi: string) {
       userId: session.user.id,
       details: { action: "addMember_non_member", groupId },
     })
-    throw new Error("Unauthorized: You must be a group member to add friends")
+    return { error: "Unauthorized: You must be a group member to add friends" }
   }
 
   const cleanInput = sanitizeTextInput(phoneOrUpi, 100)
   if (!cleanInput) {
-    throw new Error("Phone number or UPI ID is required")
+    return { error: "Phone number or UPI ID is required" }
   }
 
   // Find user to add with phone normalization
@@ -113,7 +150,7 @@ export async function addMemberToGroup(groupId: string, phoneOrUpi: string) {
   })
 
   if (!userToAdd) {
-    throw new Error("User not found. They need to create a DuoPay account first.")
+    return { error: "No DuoPay account found. Share an invite link!" }
   }
 
   // Check if already in group
@@ -122,7 +159,7 @@ export async function addMemberToGroup(groupId: string, phoneOrUpi: string) {
   })
 
   if (existingMember) {
-    throw new Error("User is already in the group")
+    return { error: "User is already in the group" }
   }
 
   await prisma.groupMember.create({
@@ -133,6 +170,7 @@ export async function addMemberToGroup(groupId: string, phoneOrUpi: string) {
   })
 
   revalidatePath(`/groups/${groupId}`)
+  return { success: true }
 }
 
 export async function leaveGroup(groupId: string) {
@@ -200,33 +238,37 @@ export async function deleteGroup(groupId: string) {
       userId: session.user.id,
       details: { action: "deleteGroup_unauthorized", groupId },
     })
-    throw new Error("Only the group creator can delete the group")
+    return { error: "Only the group creator can delete the group" }
   }
 
   // Delete all dependencies transactionally
-  await prisma.$transaction(async (tx) => {
-    const expenses = await tx.expense.findMany({ where: { groupId }, select: { id: true } })
-    const expenseIds = expenses.map(e => e.id)
-    
-    if (expenseIds.length > 0) {
-      await tx.expenseParticipant.deleteMany({ where: { expenseId: { in: expenseIds } } })
-    }
-    
-    await tx.expense.deleteMany({ where: { groupId } })
-    await tx.settlement.deleteMany({ where: { groupId } })
-    await tx.groupMember.deleteMany({ where: { groupId } })
-    await tx.group.delete({ where: { id: groupId } })
-  })
+  try {
+    await prisma.$transaction(async (tx) => {
+      const expenses = await tx.expense.findMany({ where: { groupId }, select: { id: true } })
+      const expenseIds = expenses.map(e => e.id)
+      
+      if (expenseIds.length > 0) {
+        await tx.expenseParticipant.deleteMany({ where: { expenseId: { in: expenseIds } } })
+      }
+      
+      await tx.expense.deleteMany({ where: { groupId } })
+      await tx.settlement.deleteMany({ where: { groupId } })
+      await tx.groupMember.deleteMany({ where: { groupId } })
+      await tx.group.delete({ where: { id: groupId } })
+    })
 
-  await logSecurityEvent({
-    type: "GROUP_DELETED",
-    userId: session.user.id,
-    details: { groupId },
-  })
+    await logSecurityEvent({
+      type: "GROUP_DELETED",
+      userId: session.user.id,
+      details: { groupId },
+    })
 
-  revalidatePath('/groups')
-  revalidatePath('/')
-  redirect('/groups')
+    revalidatePath('/groups')
+    revalidatePath('/')
+    return { success: true }
+  } catch (err: any) {
+    return { error: "An unexpected error occurred while deleting the group" }
+  }
 }
 
 export async function getGroupInviteToken(groupId: string): Promise<string> {

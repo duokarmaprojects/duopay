@@ -76,7 +76,7 @@ export default async function AdminDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">
           Operations & Financial Overview
         </h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -99,7 +99,7 @@ export default async function AdminDashboard() {
               </p>
             </div>
             <div className="mt-3">
-              <p className="text-2xl font-extrabold text-gray-900 dark:text-white font-mono">
+              <p className="text-2xl font-extrabold text-gray-900 dark:text-zinc-100 font-mono">
                 {item.value}
               </p>
               <p className="text-[11px] text-gray-400 mt-0.5">{item.sub}</p>

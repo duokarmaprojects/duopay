@@ -102,7 +102,7 @@ export default function NotificationCenterClient({
             <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500 flex items-center justify-center mb-3">
               <Bell size={24} />
             </div>
-            <h3 className="font-bold text-sm text-gray-900 dark:text-white mb-1">
+            <h3 className="font-bold text-sm text-gray-900 dark:text-zinc-100 mb-1">
               No notifications yet
             </h3>
             <p className="text-xs text-gray-500 dark:text-zinc-400 max-w-[240px]">
@@ -138,7 +138,7 @@ export default function NotificationCenterClient({
                     <h3
                       className={`text-xs tracking-tight truncate ${
                         isUnread
-                          ? "font-bold text-gray-900 dark:text-white"
+                          ? "font-bold text-gray-900 dark:text-zinc-100"
                           : "font-semibold text-gray-700 dark:text-zinc-300"
                       }`}
                     >

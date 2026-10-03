@@ -221,7 +221,7 @@ export default function PushNotificationManager({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-zinc-100">
                 Web Push Notifications
               </h3>
               {isSubscribed && (
