@@ -3,31 +3,42 @@
 import { useState, useEffect, useTransition } from "react"
 import Image from "next/image"
 import { InstallPwaButton } from "@/components/ui/InstallPwaButton"
+import { CountrySelector } from "@/components/ui/CountrySelector"
+import {
+  Country,
+  DEFAULT_COUNTRY,
+  getCountryByIso,
+  detectCountryFromPhone,
+  formatPhoneWithCountry,
+} from "@/domain/countries"
 
 interface LoginFormProps {
   loginAction: (formData: FormData) => Promise<void>
 }
 
 export function LoginForm({ loginAction }: LoginFormProps) {
+  const [selectedCountry, setSelectedCountry] = useState<Country>(DEFAULT_COUNTRY)
   const [phoneDisplay, setPhoneDisplay] = useState("")
   const [rawDigits, setRawDigits] = useState("")
   const [name, setName] = useState("")
   const [isPending, startTransition] = useTransition()
 
-  // Restore input on mount so refresh doesn't wipe out filled details
+  // Restore country and input on mount so refresh doesn't wipe out filled details
   useEffect(() => {
     try {
+      const savedCountryIso = localStorage.getItem("duopay_selected_country")
+      const targetCountry = savedCountryIso
+        ? getCountryByIso(savedCountryIso)
+        : DEFAULT_COUNTRY
+      setSelectedCountry(targetCountry)
+
       const savedPhone = localStorage.getItem("duopay_login_phone")
       const savedName = localStorage.getItem("duopay_login_name")
 
       if (savedPhone) {
-        const digits = savedPhone.replace(/\D/g, "").slice(0, 10)
-        setRawDigits(digits)
-        if (digits.length > 5) {
-          setPhoneDisplay(`${digits.slice(0, 5)} ${digits.slice(5)}`)
-        } else {
-          setPhoneDisplay(digits)
-        }
+        const formatted = formatPhoneWithCountry(targetCountry, savedPhone)
+        setRawDigits(formatted.digits)
+        setPhoneDisplay(formatted.display)
       }
 
       if (savedName) {
@@ -38,30 +49,54 @@ export function LoginForm({ loginAction }: LoginFormProps) {
     }
   }, [])
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let input = e.target.value.replace(/\D/g, "")
-
-    // Strip leading 91 if full 12 digits or 0 if 11 digits
-    if (input.length === 12 && input.startsWith("91")) {
-      input = input.slice(2)
-    } else if (input.length === 11 && input.startsWith("0")) {
-      input = input.slice(1)
-    }
-
-    // Limit to 10 digits
-    const digits = input.slice(0, 10)
-    setRawDigits(digits)
-
+  // User changes country from selector
+  const handleCountryChange = (country: Country) => {
+    setSelectedCountry(country)
     try {
-      localStorage.setItem("duopay_login_phone", digits)
+      localStorage.setItem("duopay_selected_country", country.iso)
     } catch {}
 
-    // Format as 5 digits + space + 5 digits
-    if (digits.length > 5) {
-      setPhoneDisplay(`${digits.slice(0, 5)} ${digits.slice(5)}`)
-    } else {
-      setPhoneDisplay(digits)
+    // Re-format existing digits with the newly selected country's rules
+    if (rawDigits) {
+      const formatted = formatPhoneWithCountry(country, rawDigits)
+      setPhoneDisplay(formatted.display)
+      setRawDigits(formatted.digits)
     }
+  }
+
+  // User types or pastes into the phone input
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+
+    // Check if user pasted a complete international number with '+'
+    if (val.trim().startsWith("+")) {
+      const detected = detectCountryFromPhone(val)
+      if (detected) {
+        setSelectedCountry(detected.country)
+        try {
+          localStorage.setItem("duopay_selected_country", detected.country.iso)
+        } catch {}
+
+        const formatted = formatPhoneWithCountry(
+          detected.country,
+          detected.nationalNumber
+        )
+        setRawDigits(formatted.digits)
+        setPhoneDisplay(formatted.display)
+        try {
+          localStorage.setItem("duopay_login_phone", formatted.digits)
+        } catch {}
+        return
+      }
+    }
+
+    // Normal typing within currently selected country
+    const formatted = formatPhoneWithCountry(selectedCountry, val)
+    setRawDigits(formatted.digits)
+    setPhoneDisplay(formatted.display)
+    try {
+      localStorage.setItem("duopay_login_phone", formatted.digits)
+    } catch {}
   }
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,10 +109,12 @@ export function LoginForm({ loginAction }: LoginFormProps) {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (rawDigits.length < 10 || isPending) return
+    if (rawDigits.length < 6 || isPending) return
 
     const formData = new FormData()
-    formData.set("phone", `+91${rawDigits}`)
+    // Convert to canonical international E.164 format (e.g. +919876543210, +14155551234)
+    const e164 = `${selectedCountry.callingCode}${rawDigits}`
+    formData.set("phone", e164)
     if (name.trim()) {
       formData.set("name", name.trim())
     }
@@ -87,7 +124,8 @@ export function LoginForm({ loginAction }: LoginFormProps) {
     })
   }
 
-  const isReady = rawDigits.length === 10
+  const { isPossible } = formatPhoneWithCountry(selectedCountry, rawDigits)
+  const isReady = rawDigits.length >= 6 && (isPossible || rawDigits.length >= 8)
 
   return (
     <div className="w-full max-w-[360px] mx-auto flex flex-col justify-center my-auto px-1 py-4">
@@ -113,7 +151,7 @@ export function LoginForm({ loginAction }: LoginFormProps) {
 
       {/* 2. AUTH FORM */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {/* Phone Input */}
+        {/* Phone Input with Unified Country Selector */}
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="phone-input"
@@ -121,10 +159,15 @@ export function LoginForm({ loginAction }: LoginFormProps) {
           >
             Phone number
           </label>
-          <div className="flex items-center w-full h-12 rounded-xl bg-zinc-900/90 border border-zinc-800/90 px-3.5 transition-all focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
-            <div className="flex items-center pr-3 border-r border-zinc-800 text-xs font-semibold text-zinc-300 select-none">
-              <span>+91</span>
-            </div>
+          <div className="flex items-center w-full h-12 rounded-xl bg-zinc-900/90 border border-zinc-800/90 transition-all focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500 overflow-hidden">
+            {/* Country Selector Trigger [ 🇮🇳 +91 ▾ ] */}
+            <CountrySelector
+              selectedCountry={selectedCountry}
+              onSelectCountry={handleCountryChange}
+              disabled={isPending}
+            />
+
+            {/* National Number Input */}
             <input
               id="phone-input"
               type="tel"
@@ -135,7 +178,7 @@ export function LoginForm({ loginAction }: LoginFormProps) {
               placeholder="Enter mobile number"
               required
               disabled={isPending}
-              className="flex-1 bg-transparent pl-3 text-sm font-medium text-white placeholder:text-zinc-600 focus:outline-none tracking-wider disabled:opacity-50 [color-scheme:dark]"
+              className="flex-1 bg-transparent px-3 text-sm font-medium text-white placeholder:text-zinc-600 focus:outline-none tracking-wider disabled:opacity-50 [color-scheme:dark]"
               style={{
                 WebkitBoxShadow: "0 0 0 1000px #18181b inset",
                 WebkitTextFillColor: "#ffffff",
