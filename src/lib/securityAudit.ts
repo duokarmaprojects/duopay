@@ -29,6 +29,10 @@ export type SecurityEventType =
   | "FRIEND_REQUEST_SENT"
   | "FRIEND_REQUEST_ACCEPTED"
   | "FRIEND_REMOVED"
+  | "RECURRING_EXPENSE_CREATED"
+  | "RECURRING_EXPENSE_UPDATED"
+  | "RECURRING_EXPENSE_DELETED"
+  | "RECURRING_EXPENSE_TRIGGERED"
 
 export interface SecurityEventData {
   type: SecurityEventType

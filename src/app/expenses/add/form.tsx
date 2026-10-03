@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { addExpense } from "@/actions/expense"
-import { Check, Percent, IndianRupee, Hash, Equal } from "lucide-react"
+import { Check, Percent, IndianRupee, Hash, Equal, Sparkles } from "lucide-react"
 import { 
   calculateEqualSplit, 
   calculatePercentageSplit, 
@@ -14,6 +14,7 @@ import {
 import { useSearchParams } from "next/navigation"
 import { ExpenseIconPicker } from "@/components/expenses/ExpenseIconPicker"
 import { ExpenseCategory, getExpenseCategory } from "@/domain/expenseIcon"
+import { getSmartExpenseSuggestions, ExpenseSuggestions } from "@/actions/suggestions"
 
 type Member = { id: string; name: string; image: string | null }
 type SplitMethod = "EQUAL" | "PERCENTAGE" | "EXACT" | "SHARES"
@@ -31,6 +32,20 @@ export function AddExpenseForm({ groupId, members, currentUserId }: { groupId: s
   
   // splitData holds either percentages, exact amounts (in INR for UI), or share counts
   const [splitData, setSplitData] = useState<Record<string, number>>({})
+
+  const [suggestions, setSuggestions] = useState<ExpenseSuggestions | null>(null)
+
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      try {
+        const res = await getSmartExpenseSuggestions(description)
+        setSuggestions(res)
+      } catch {
+        // Advisory only - ignore failures
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [description])
 
   const amountPaise = useMemo(() => inrToPaise(parseFloat(amountStr) || 0), [amountStr])
   const activeParticipants = Array.from(selectedParticipants)
@@ -166,6 +181,37 @@ export function AddExpenseForm({ groupId, members, currentUserId }: { groupId: s
               className="flex-1 bg-transparent border-none outline-none text-xl dark:text-white placeholder:text-gray-400 py-3 pr-4"
             />
           </div>
+
+          {/* Smart Suggestions Chips */}
+          {suggestions && suggestions.recentDescriptions.length > 0 && !description && (
+            <div className="flex items-center gap-1.5 overflow-x-auto pt-1 scrollbar-none">
+              <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1 shrink-0">
+                <Sparkles size={11} className="text-amber-500" /> Recent:
+              </span>
+              {suggestions.recentDescriptions.map((desc) => (
+                <button
+                  key={desc}
+                  type="button"
+                  onClick={() => setDescription(desc)}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700 whitespace-nowrap transition-colors"
+                >
+                  {desc}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {suggestions && suggestions.typicalAmountPaise && !amountStr && (
+            <div className="flex items-center gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setAmountStr((suggestions.typicalAmountPaise! / 100).toFixed(2))}
+                className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              >
+                <Sparkles size={11} /> Suggested amount: ₹{(suggestions.typicalAmountPaise / 100).toFixed(2)}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-2">

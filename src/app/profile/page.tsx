@@ -12,6 +12,7 @@ import ProfileImageUpload from "./upload-form"
 import AppearanceSettings from "./AppearanceSettings"
 import UpiModal, { UpiDetailsCard } from "./UpiModal"
 import ProfileSections from "./ProfileSections"
+import ExportDataModal from "./ExportDataModal"
 import { getUserSettings } from "@/actions/settings"
 import BottomNav from "@/components/navigation/BottomNav"
 
@@ -129,6 +130,7 @@ export default async function ProfilePage() {
               </div>
             </Link>
           )}
+          <ExportDataModal />
           <AppearanceSettings />
           <ProfileSections initialSettings={userSettings} />
         </div>

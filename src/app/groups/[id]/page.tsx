@@ -2,13 +2,14 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
 import Link from "next/link"
-import { ArrowLeft, UserPlus, Receipt } from "lucide-react"
+import { ArrowLeft, UserPlus } from "lucide-react"
 import { getUserBalances } from "@/services/balance"
-import DeleteExpenseButton from "./DeleteExpenseButton"
 import GroupActions from "./GroupActions"
-import { ExpenseIcon } from "@/components/expenses/ExpenseIcon"
 import { GroupIcon } from "@/components/ui/GroupIcon"
 import GroupSmartSettleButton from "./GroupSmartSettleButton"
+import RecurringExpensesModal from "./RecurringExpensesModal"
+import GroupExpenseList from "./GroupExpenseList"
+import { getGroupRecurringExpenses, generateDueRecurringExpenses } from "@/actions/recurring"
 
 export default async function GroupPage({ params }: { params: { id: string } }) {
   const session = await auth()
@@ -48,6 +49,17 @@ export default async function GroupPage({ params }: { params: { id: string } }) 
   const oweBalances = detailedBalances.filter(b => b.type === 'USER_OWES' && groupMemberIds.has(b.userId))
   const owedBalances = detailedBalances.filter(b => b.type === 'OWED_TO_USER' && groupMemberIds.has(b.userId))
 
+  // Process due recurring expenses (idempotent)
+  await generateDueRecurringExpenses(id).catch(() => {})
+
+  // Fetch recurring expense schedules for this group
+  const recurringSchedules = await getGroupRecurringExpenses(id).catch(() => [] as any[])
+
+  const membersList = group.members.map(m => ({
+    id: m.user.id,
+    name: m.user.name || 'Unknown',
+  }))
+
   return (
     <div className="flex flex-col flex-1 bg-gray-50 h-screen">
       <header className="bg-white px-4 pt-4 pb-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10">
@@ -60,9 +72,17 @@ export default async function GroupPage({ params }: { params: { id: string } }) 
             <h1 className="text-xl font-bold">{group.name}</h1>
           </div>
         </div>
-        <Link href={`/groups/${group.id}/add-member`} className="p-2 text-gray-900 active:bg-gray-100 rounded-full">
-          <UserPlus size={24} />
-        </Link>
+        <div className="flex items-center gap-1">
+          <RecurringExpensesModal
+            groupId={id}
+            members={membersList}
+            currentUserId={userId}
+            initialSchedules={recurringSchedules}
+          />
+          <Link href={`/groups/${group.id}/add-member`} className="p-2 text-gray-900 active:bg-gray-100 rounded-full">
+            <UserPlus size={24} />
+          </Link>
+        </div>
       </header>
 
       {/* Balances to Settle */}
@@ -108,64 +128,7 @@ export default async function GroupPage({ params }: { params: { id: string } }) 
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 pb-24">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Expenses</h2>
-        {group.expenses.length === 0 ? (
-          <div className="text-center py-10">
-            <div className="w-12 h-12 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Receipt size={24} />
-            </div>
-            <p className="text-gray-500 font-medium">No expenses yet</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {group.expenses.map((expense) => {
-              const currentUserId = session?.user?.id;
-              const userShare = expense.participants.find(p => p.userId === currentUserId)?.share
-              const isPayer = expense.payerId === currentUserId
-              
-              let summary = ""
-              let color = ""
-              
-              if (isPayer && userShare) {
-                const youLent = expense.amount - userShare
-                if (youLent > 0) {
-                  summary = `You lent ₹${youLent / 100}`
-                  color = "text-emerald-600"
-                } else {
-                  summary = `You paid for yourself`
-                  color = "text-gray-500"
-                }
-              } else if (isPayer) {
-                summary = `You lent ₹${expense.amount / 100}`
-                color = "text-emerald-600"
-              } else if (userShare) {
-                summary = `You borrowed ₹${userShare / 100}`
-                color = "text-red-500"
-              } else {
-                summary = `Not involved`
-                color = "text-gray-400"
-              }
-
-              return (
-                <div key={expense.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between group">
-                  <div className="flex items-center gap-4">
-                    <ExpenseIcon category={expense.category} description={expense.description} className="w-10 h-10 rounded-xl" />
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{expense.description}</h3>
-                      <p className="text-sm text-gray-500">{expense.payer.name} paid ₹{expense.amount / 100}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <p className={`text-sm font-bold ${color}`}>{summary}</p>
-                    </div>
-                    <DeleteExpenseButton expenseId={expense.id} />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
+        <GroupExpenseList expenses={group.expenses} currentUserId={userId} />
 
         <GroupActions groupId={group.id} isCreator={isCreator} />
       </div>

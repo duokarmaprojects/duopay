@@ -47,6 +47,7 @@ model User {
   notifications        Notification[]
   friendshipsInitiated Friendship[]        @relation("FriendshipsInitiated")
   friendshipsReceived  Friendship[]        @relation("FriendshipsReceived")
+  recurringExpenses    RecurringExpense[]
 }
 
 // NextAuth standard models
@@ -85,6 +86,7 @@ model Group {
   members     GroupMember[]
   expenses    Expense[]
   settlements Settlement[]
+  recurringExpenses RecurringExpense[]
 }
 
 model GroupMember {
@@ -336,5 +338,32 @@ model Friendship {
   @@index([userId, status])
   @@index([friendId, status])
 }
+
+model RecurringExpense {
+  id               String    @id @default(cuid())
+  groupId          String
+  description      String
+  amount           Int       // In paise (e.g. ₹500.00 = 50000)
+  category         String?   @default("OTHER")
+  payerId          String
+  splitMethod      String    @default("EQUAL") // EQUAL, EXACT, PERCENTAGE, SHARES
+  splitData        String?   // JSON configuration of shares/percentages/amounts
+  frequency        String    // DAILY, WEEKLY, MONTHLY, YEARLY
+  startDate        DateTime
+  endDate          DateTime?
+  nextOccurrence   DateTime
+  lastGeneratedAt  DateTime?
+  status           String    @default("ACTIVE") // ACTIVE, PAUSED, CANCELLED, COMPLETED
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  group            Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  payer            User      @relation(fields: [payerId], references: [id], onDelete: Restrict)
+
+  @@index([groupId, status])
+  @@index([nextOccurrence, status])
+  @@index([payerId])
+}
+
 
 
