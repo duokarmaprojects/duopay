@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import {
   validateId,
   getSafeRedirectUrl,
@@ -20,6 +20,9 @@ import { recordSettlement } from "@/actions/settlement"
 import { addExpense } from "@/actions/expense"
 import { deleteGroup, joinGroupWithInviteToken } from "@/actions/group"
 import { getUserBalances } from "@/services/balance"
+import { sanitizeEventDetails } from "./securityAudit"
+import { POST as handlePaymentWebhook } from "@/app/api/webhooks/payments/route"
+import crypto from "crypto"
 
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
@@ -62,15 +65,23 @@ vi.mock("@/lib/db", () => ({
     settlement: {
       findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
       deleteMany: vi.fn(),
     },
     expense: {
+      findUnique: vi.fn(),
       findMany: vi.fn(),
       create: vi.fn(),
       deleteMany: vi.fn(),
     },
     expenseParticipant: {
+      createMany: vi.fn(),
       deleteMany: vi.fn(),
+    },
+    upiVerificationAttempt: {
+      count: vi.fn().mockResolvedValue(0),
+      create: vi.fn().mockResolvedValue({ id: "att-1" }),
     },
     analyticsEvent: {
       create: vi.fn().mockResolvedValue({ id: "event-1" }),
@@ -479,4 +490,214 @@ describe("Production Security Hardening Test Suite", () => {
       expect(prisma.groupMember.create).not.toHaveBeenCalled()
     })
   })
+
+  // =========================================================================
+  // 9. PII LEAKAGE & RECURSIVE SANITIZATION (securityAudit.ts)
+  // =========================================================================
+  describe("PII Redaction & Audit Sanitization", () => {
+    it("should redact secrets, tokens, webhook keys, cookies, and cards", () => {
+      const details = {
+        api_key: "sk_live_12345",
+        password: "SuperSecretPassword123!",
+        user_token: "jwt.token.here",
+        sessionToken: "sess_abc",
+        webhookSignature: "sig_xyz",
+        card_number: "411111111111",
+        cvv: "123",
+      }
+
+      const clean = sanitizeEventDetails(details)
+      for (const val of Object.values(clean)) {
+        expect(val).toBe("[REDACTED]")
+      }
+    })
+
+    it("should mask phone numbers, email addresses, and UPI VPAs", () => {
+      const details = {
+        phone: "+919876543210",
+        email: "alice@example.com",
+        upiId: "alice@okhdfcbank",
+      }
+
+      const clean = sanitizeEventDetails(details)
+      expect(clean.phone).toBe("***3210")
+      expect(clean.email).toBe("a***@example.com")
+      expect(clean.upiId).toBe("a***@okhdfcbank")
+    })
+
+    it("should recursively sanitize nested objects and arrays", () => {
+      const nested = {
+        context: {
+          clientSecret: "shh-secret",
+          participants: [
+            { phone: "+919876500000", key: "private_key" },
+            { email: "bob@domain.com" },
+          ],
+        },
+      }
+
+      const clean = sanitizeEventDetails(nested) as any
+      expect(clean.context.clientSecret).toBe("[REDACTED]")
+      expect(clean.context.participants[0].key).toBe("[REDACTED]")
+      expect(clean.context.participants[0].phone).toBe("***0000")
+      expect(clean.context.participants[1].email).toBe("b***@domain.com")
+    })
+  })
+
+  // =========================================================================
+  // 10. PAYMENT WEBHOOK HMAC SIGNATURE & RECONCILIATION
+  // =========================================================================
+  describe("Payment Webhook Security & Idempotency", () => {
+    const originalEnv = process.env
+
+    beforeEach(() => {
+      process.env = { ...originalEnv, RAZORPAY_WEBHOOK_SECRET: "test-webhook-secret" }
+    })
+
+    afterEach(() => {
+      process.env = originalEnv
+    })
+
+    it("should reject webhooks with missing or invalid HMAC signature", async () => {
+      const req = new Request("http://localhost/api/webhooks/payments", {
+        method: "POST",
+        headers: { "x-razorpay-signature": "invalid-signature" },
+        body: JSON.stringify({ event: "payment.captured" }),
+      })
+
+      const res = await handlePaymentWebhook(req as any)
+      expect(res.status).toBe(401)
+      const data = await res.json()
+      expect(data.error).toBe("Invalid webhook signature")
+    })
+
+    it("should verify valid Razorpay HMAC signature and settle record", async () => {
+      const secret = "test-webhook-secret"
+      const payloadObj = {
+        event: "payment.captured",
+        payload: {
+          payment: {
+            entity: {
+              id: "pay_12345",
+              amount: 5000,
+              notes: { settlementId: "settle-1" },
+            },
+          },
+        },
+      }
+      const rawBody = JSON.stringify(payloadObj)
+      const validSignature = crypto
+        .createHmac("sha256", secret)
+        .update(rawBody)
+        .digest("hex")
+
+      vi.mocked(prisma.settlement.findUnique).mockResolvedValueOnce({
+        id: "settle-1",
+        amount: 5000,
+        status: "PENDING",
+        payerId: "user-alice",
+      } as any)
+
+      const req = new Request("http://localhost/api/webhooks/payments", {
+        method: "POST",
+        headers: { "x-razorpay-signature": validSignature },
+        body: rawBody,
+      })
+
+      const res = await handlePaymentWebhook(req as any)
+      expect(res.status).toBe(200)
+      const json = await res.json()
+      expect(json.success).toBe(true)
+      expect(prisma.settlement.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "settle-1" },
+          data: expect.objectContaining({
+            status: "SETTLED",
+            paymentStatus: "PAYMENT_SUCCESS",
+            providerTransactionId: "pay_12345",
+          }),
+        })
+      )
+    })
+
+    it("should reject webhook if callback amount does not match settlement amount", async () => {
+      const secret = "test-webhook-secret"
+      const payloadObj = {
+        event: "payment.captured",
+        payload: {
+          payment: {
+            entity: {
+              id: "pay_12345",
+              amount: 2000, // Attacker sends smaller amount than owed 5000
+              notes: { settlementId: "settle-1" },
+            },
+          },
+        },
+      }
+      const rawBody = JSON.stringify(payloadObj)
+      const validSignature = crypto
+        .createHmac("sha256", secret)
+        .update(rawBody)
+        .digest("hex")
+
+      vi.mocked(prisma.settlement.findUnique).mockResolvedValueOnce({
+        id: "settle-1",
+        amount: 5000, // Settlement expects 5000 paise
+        status: "PENDING",
+      } as any)
+
+      const req = new Request("http://localhost/api/webhooks/payments", {
+        method: "POST",
+        headers: { "x-razorpay-signature": validSignature },
+        body: rawBody,
+      })
+
+      const res = await handlePaymentWebhook(req as any)
+      expect(res.status).toBe(400)
+      const json = await res.json()
+      expect(json.error).toBe("Amount mismatch")
+      expect(prisma.settlement.update).not.toHaveBeenCalled()
+    })
+
+    it("should be idempotent when duplicate webhook is delivered for already settled record", async () => {
+      const secret = "test-webhook-secret"
+      const payloadObj = {
+        event: "payment.captured",
+        payload: {
+          payment: {
+            entity: {
+              id: "pay_12345",
+              amount: 5000,
+              notes: { settlementId: "settle-1" },
+            },
+          },
+        },
+      }
+      const rawBody = JSON.stringify(payloadObj)
+      const validSignature = crypto
+        .createHmac("sha256", secret)
+        .update(rawBody)
+        .digest("hex")
+
+      // Settlement is ALREADY SETTLED
+      vi.mocked(prisma.settlement.findUnique).mockResolvedValueOnce({
+        id: "settle-1",
+        amount: 5000,
+        status: "SETTLED",
+      } as any)
+
+      const req = new Request("http://localhost/api/webhooks/payments", {
+        method: "POST",
+        headers: { "x-razorpay-signature": validSignature },
+        body: rawBody,
+      })
+
+      const res = await handlePaymentWebhook(req as any)
+      expect(res.status).toBe(200)
+      const json = await res.json()
+      expect(json.idempotent).toBe(true)
+      expect(prisma.settlement.update).not.toHaveBeenCalled()
+    })
+  })
 })
+

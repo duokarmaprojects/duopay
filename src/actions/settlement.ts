@@ -29,13 +29,29 @@ export async function recordSettlement(formData: FormData) {
 
   const payerId = session.user.id
 
-  // Rate Limiting: max 10 settlements / minute
+  // Rate Limiting: max 10 settlements / minute (in-process + persistent DB checks)
   const rateLimit = checkActionRateLimit("SETTLEMENT", payerId)
   if (!rateLimit.allowed) {
     await logSecurityEvent({
       type: "RATE_LIMIT_TRIGGERED",
       userId: payerId,
       details: { action: "recordSettlement" },
+    })
+    throw new Error("Too many settlement attempts. Please wait a minute before trying again.")
+  }
+
+  const sixtySecondsAgo = new Date(Date.now() - 60 * 1000)
+  const dbSettlementCount = await prisma.settlement.count({
+    where: {
+      payerId,
+      createdAt: { gte: sixtySecondsAgo },
+    },
+  })
+  if (dbSettlementCount >= 10) {
+    await logSecurityEvent({
+      type: "RATE_LIMIT_TRIGGERED",
+      userId: payerId,
+      details: { action: "recordSettlement_persistent_limit" },
     })
     throw new Error("Too many settlement attempts. Please wait a minute before trying again.")
   }
@@ -156,22 +172,41 @@ export async function recordSettlement(formData: FormData) {
     }
   }
 
-  // 6. Execute settlement transactionally
-  await prisma.$transaction(async (tx) => {
-    await tx.settlement.create({
-      data: {
-        payerId,
-        receiverId,
-        amount: amountPaise,
-        groupId: groupId || null,
-        status: "COMPLETED",
-        paymentStatus: "PAYMENT_SUCCESS",
-        idempotencyKey: effectiveIdempotencyKey,
-        settledAt: new Date(),
-        payeeUpiId: receiver.upiId || null,
-      },
+  // 6. Execute settlement transactionally with DB-level unique constraint idempotency protection
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.settlement.create({
+        data: {
+          payerId,
+          receiverId,
+          amount: amountPaise,
+          groupId: groupId || null,
+          status: "COMPLETED",
+          paymentStatus: "PAYMENT_SUCCESS",
+          paymentProvider: "manual_confirmation",
+          idempotencyKey: effectiveIdempotencyKey,
+          settledAt: new Date(),
+          payeeUpiId: receiver.upiId || null,
+        },
+      })
     })
-  })
+  } catch (err: any) {
+    // If a concurrent request created the settlement with the exact same idempotency key,
+    // handle P2002 as a successful duplicate replay instead of failing
+    if (err?.code === "P2002" || String(err?.message || "").includes("idempotencyKey")) {
+      await logSecurityEvent({
+        type: "FINANCIAL_SETTLEMENT_RECORDED",
+        userId: payerId,
+        details: { reason: "Idempotent concurrent replay detected via DB unique constraint" },
+      })
+      if (groupId) {
+        redirect(`/groups/${groupId}`)
+      } else {
+        redirect("/")
+      }
+    }
+    throw err
+  }
 
   await logSecurityEvent({
     type: "FINANCIAL_SETTLEMENT_RECORDED",
@@ -180,6 +215,7 @@ export async function recordSettlement(formData: FormData) {
       receiverId,
       amountPaise,
       groupId: groupId || null,
+      paymentProvider: "manual_confirmation",
     },
   })
 

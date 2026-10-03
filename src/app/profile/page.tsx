@@ -3,20 +3,22 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
 import Link from "next/link"
 import { 
-  User, Users, Activity, Settings, 
-  LogOut, Bell, Lock, ChevronRight, 
-  CreditCard, PieChart, Receipt, CheckCircle2 
+  User, Users, Activity, 
+  LogOut, 
+  PieChart, Receipt, CheckCircle2 
 } from "lucide-react"
 import { getUserBalances } from "@/services/balance"
 import ProfileImageUpload from "./upload-form"
 import AppearanceSettings from "./AppearanceSettings"
 import UpiModal, { UpiDetailsCard } from "./UpiModal"
+import ProfileSections from "./ProfileSections"
+import { getUserSettings } from "@/actions/settings"
 
 export default async function ProfilePage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
-  const [user, { totalOwedToUser, totalUserOwes }, groupCount, expenseCount, settlementCount] = await Promise.all([
+  const [user, { totalOwedToUser, totalUserOwes }, groupCount, expenseCount, settlementCount, userSettings] = await Promise.all([
     prisma.user.findUnique({ where: { id: session.user.id } }),
     getUserBalances(session.user.id),
     prisma.groupMember.count({ where: { userId: session.user.id } }),
@@ -35,29 +37,12 @@ export default async function ProfilePage() {
           { receiverId: session.user.id }
         ] 
       } 
-    })
+    }),
+    getUserSettings(),
   ])
 
   const SectionTitle = ({ children }: { children: React.ReactNode }) => (
     <h2 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-6 mt-8">{children}</h2>
-  )
-
-  const AccountItem = ({ icon: Icon, title, subtitle, href }: any) => (
-    <Link 
-      href={href || "#"} 
-      className="flex items-center justify-between p-4 bg-white border-b border-gray-50 active:bg-gray-50 transition-colors first:rounded-t-2xl last:rounded-b-2xl last:border-b-0"
-    >
-      <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-50 text-gray-600">
-          <Icon size={20} />
-        </div>
-        <div>
-          <p className="font-semibold text-sm text-gray-900">{title}</p>
-          {subtitle && <p className="text-xs mt-0.5 text-gray-500">{subtitle}</p>}
-        </div>
-      </div>
-      <ChevronRight size={20} className="text-gray-300" />
-    </Link>
   )
 
   return (
@@ -140,9 +125,7 @@ export default async function ProfilePage() {
             </Link>
           )}
           <AppearanceSettings />
-          <AccountItem icon={Settings} title="Settings" subtitle="General app preferences" />
-          <AccountItem icon={Bell} title="Notifications" subtitle="Alerts and reminders" />
-          <AccountItem icon={Lock} title="Privacy & Contacts" subtitle="Security and visibility" />
+          <ProfileSections initialSettings={userSettings} />
         </div>
 
         {/* 6. Logout */}

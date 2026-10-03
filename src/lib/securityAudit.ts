@@ -34,23 +34,59 @@ export interface SecurityEventData {
 }
 
 /**
- * Sanitizes details to ensure sensitive secrets, credentials, or keys are never logged.
+ * Sanitizes details to ensure sensitive secrets, credentials, or PII are never logged or persisted.
+ * Redacts tokens, keys, passwords, webhook signatures, and masks phone numbers, emails, and UPI VPAs.
  */
-function sanitizeEventDetails(details?: Record<string, unknown>): Record<string, unknown> {
-  if (!details) return {}
+export function sanitizeEventDetails(details?: Record<string, unknown>): Record<string, unknown> {
+  if (!details || typeof details !== "object") return {}
   const sanitized: Record<string, unknown> = {}
 
   for (const [key, val] of Object.entries(details)) {
     const lowerKey = key.toLowerCase()
+
     if (
       lowerKey.includes("password") ||
       lowerKey.includes("secret") ||
       lowerKey.includes("token") ||
       lowerKey.includes("key") ||
       lowerKey.includes("auth") ||
-      lowerKey.includes("cookie")
+      lowerKey.includes("cookie") ||
+      lowerKey.includes("signature") ||
+      lowerKey.includes("credential") ||
+      lowerKey.includes("cvv") ||
+      lowerKey.includes("card") ||
+      lowerKey.includes("webhook") ||
+      lowerKey.includes("session")
     ) {
       sanitized[key] = "[REDACTED]"
+    } else if (lowerKey.includes("phone") || lowerKey.includes("mobile")) {
+      if (typeof val === "string" && val.length > 4) {
+        sanitized[key] = `***${val.slice(-4)}`
+      } else {
+        sanitized[key] = "[REDACTED_PHONE]"
+      }
+    } else if (lowerKey.includes("email")) {
+      if (typeof val === "string" && val.includes("@")) {
+        const [u, d] = val.split("@")
+        sanitized[key] = `${u.charAt(0)}***@${d}`
+      } else {
+        sanitized[key] = "[REDACTED_EMAIL]"
+      }
+    } else if (lowerKey.includes("upi") || lowerKey.includes("vpa")) {
+      if (typeof val === "string" && val.includes("@")) {
+        const [u, h] = val.split("@")
+        sanitized[key] = `${u.charAt(0)}***@${h}`
+      } else {
+        sanitized[key] = "[REDACTED_UPI]"
+      }
+    } else if (val && typeof val === "object" && !Array.isArray(val)) {
+      sanitized[key] = sanitizeEventDetails(val as Record<string, unknown>)
+    } else if (Array.isArray(val)) {
+      sanitized[key] = val.map((item) =>
+        item && typeof item === "object"
+          ? sanitizeEventDetails(item as Record<string, unknown>)
+          : item
+      )
     } else {
       sanitized[key] = val
     }

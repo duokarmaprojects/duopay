@@ -273,18 +273,27 @@ export async function matchContacts(contacts: Array<{ name: string; tel: string 
     return { registered: [], unregistered: [] }
   }
 
-  // Query database for matching users with safe projections
+  // Query database for matching users with safe projections and privacy enforcement
   const matchedUsers = await prisma.user.findMany({
     where: {
-      phone: { in: phoneNumbers }
+      phone: { in: phoneNumbers },
+      OR: [
+        { settings: null },
+        { settings: { discoverableByPhone: true } },
+      ],
     },
     select: {
       id: true,
       name: true,
       phone: true,
       image: true,
-      upiId: true
-    }
+      upiId: true,
+      settings: {
+        select: {
+          showUpiOnProfile: true,
+        },
+      },
+    },
   })
 
   const matchedPhoneSet = new Set(matchedUsers.map(u => u.phone))
@@ -294,7 +303,7 @@ export async function matchContacts(contacts: Array<{ name: string; tel: string 
     name: u.name || normalizedMap.get(u.phone!) || "DuoPay User",
     phone: u.phone!,
     image: u.image,
-    upiId: u.upiId,
+    upiId: u.settings?.showUpiOnProfile === false ? null : u.upiId,
     contactName: normalizedMap.get(u.phone!) || u.name || "Friend"
   }))
 

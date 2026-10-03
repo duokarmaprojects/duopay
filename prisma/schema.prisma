@@ -35,6 +35,7 @@ model User {
   settlementsReceived Settlement[] @relation("SettlementsReceived")
   
   analyticsEvents     AnalyticsEvent[]
+  settings            UserSettings?
 }
 
 // NextAuth standard models
@@ -196,3 +197,29 @@ model UpiVerificationAttempt {
 
   @@index([userId, createdAt])
 }
+
+model UserSettings {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // General App Preferences
+  currency             String   @default("INR") // INR, USD, EUR, GBP
+  defaultSplitMethod   String   @default("EQUAL") // EQUAL, EXACT, PERCENTAGE, SHARES
+  simplifyDebts        Boolean  @default(true)
+
+  // Notifications
+  expenseAlerts        Boolean  @default(true)
+  paymentReminders     Boolean  @default(true)
+  groupActivityAlerts  Boolean  @default(true)
+  pushNotifications    Boolean  @default(false)
+
+  // Privacy & Visibility
+  discoverableByPhone  Boolean  @default(true)
+  shareActivityInGroup Boolean  @default(true)
+  showUpiOnProfile     Boolean  @default(true)
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+

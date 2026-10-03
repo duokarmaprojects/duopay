@@ -165,29 +165,51 @@ export async function addExpense(formData: FormData) {
     throw new Error(e.message)
   }
 
-  // Create Expense and Participants transactionally
-  await prisma.$transaction(async (tx) => {
-    const expense = await tx.expense.create({
-      data: {
-        groupId: data.groupId,
-        description: data.description,
-        amount: amountPaise,
-        payerId: data.payerId,
-        splitMethod: data.splitMethod,
-        category: data.category
-      }
-    })
+  const rawIdempotencyKey = formData.get("idempotencyKey")
+  const idempotencyKey =
+    typeof rawIdempotencyKey === "string" && rawIdempotencyKey.trim()
+      ? rawIdempotencyKey.trim()
+      : `expense:${userId}:${data.groupId}:${amountPaise}:${data.description}:${Math.floor(Date.now() / 15000)}`
 
-    const participantsData = data.participantIds.map(pid => ({
-      expenseId: expense.id,
-      userId: pid,
-      share: shares[pid]
-    }))
-
-    await tx.expenseParticipant.createMany({
-      data: participantsData
-    })
+  const existingExpense = await prisma.expense.findUnique({
+    where: { idempotencyKey },
+    select: { id: true, groupId: true },
   })
+  if (existingExpense) {
+    redirect(`/groups/${data.groupId}`)
+  }
+
+  // Create Expense and Participants transactionally with DB-level idempotency protection
+  try {
+    await prisma.$transaction(async (tx) => {
+      const expense = await tx.expense.create({
+        data: {
+          groupId: data.groupId,
+          description: data.description,
+          amount: amountPaise,
+          payerId: data.payerId,
+          splitMethod: data.splitMethod,
+          category: data.category,
+          idempotencyKey,
+        },
+      })
+
+      const participantsData = data.participantIds.map(pid => ({
+        expenseId: expense.id,
+        userId: pid,
+        share: shares[pid]
+      }))
+
+      await tx.expenseParticipant.createMany({
+        data: participantsData
+      })
+    })
+  } catch (err: any) {
+    if (err?.code === "P2002" || String(err?.message || "").includes("idempotencyKey")) {
+      redirect(`/groups/${data.groupId}`)
+    }
+    throw err
+  }
 
   await logSecurityEvent({
     type: "EXPENSE_CREATED",

@@ -340,7 +340,7 @@ export async function verifyUpiId(
 
   const vpa = format.normalized
 
-  // Step 2: Rate Limiting
+  // Step 2: Rate Limiting (Process-local + Persistent Database Multi-Tier)
   const allowed = checkRateLimit(userId)
   if (!allowed) {
     return {
@@ -351,6 +351,29 @@ export async function verifyUpiId(
       provider: "rate_limiter",
       message: "Too many verification attempts. Please wait 10 minutes before trying again.",
     }
+  }
+
+  // Persistent serverless rate limit check across distributed Vercel instances
+  try {
+    const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000)
+    const dbAttempts = await prisma.upiVerificationAttempt.count({
+      where: {
+        userId,
+        createdAt: { gte: tenMinsAgo },
+      },
+    })
+    if (dbAttempts >= 5) {
+      return {
+        success: false,
+        exists: false,
+        status: "RATE_LIMITED",
+        vpa,
+        provider: "rate_limiter",
+        message: "Too many verification attempts. Please wait 10 minutes before trying again.",
+      }
+    }
+  } catch {
+    // Fall back to in-memory limit if DB read fails
   }
 
   // Step 3: Check Cache (only valid, non-expired verified records)
