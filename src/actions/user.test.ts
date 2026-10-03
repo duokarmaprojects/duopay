@@ -3,6 +3,8 @@ import { updateUpiId } from "./user"
 import { prisma } from "@/lib/db"
 import { auth } from "@/lib/auth"
 
+import { resetRateLimitsForTesting } from "@/services/upiVerification"
+
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
 }))
@@ -24,15 +26,20 @@ vi.mock("@/lib/db", () => ({
     upiVerification: {
       findUnique: vi.fn(),
     },
+    upiVerificationAttempt: {
+      create: vi.fn().mockResolvedValue({ id: "att-1" }),
+    },
   },
 }))
 
 describe("Server-Side UPI Enforcement (user.ts)", () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
+    resetRateLimitsForTesting()
     vi.mocked(auth as any).mockResolvedValue({
       user: { id: "test-user-id" },
     } as any)
+    vi.mocked(prisma.upiVerificationAttempt.create).mockResolvedValue({ id: "att-1" } as any)
   })
 
   it("should reject unauthenticated requests", async () => {
@@ -124,6 +131,53 @@ describe("Server-Side UPI Enforcement (user.ts)", () => {
         upiVerified: true,
         upiVerifiedName: "VERIFIED NAME",
       }),
+    })
+  })
+
+  describe("verifyUpiIdAction", () => {
+    it("should reject unauthenticated verify actions", async () => {
+      const { verifyUpiIdAction } = await import("./user")
+      vi.mocked(auth as any).mockResolvedValueOnce(null)
+      await expect(verifyUpiIdAction("moiz@oksbi")).rejects.toThrow("Unauthorized")
+    })
+
+    it("should only update the authenticated session user and prevent cross-user verification tampering", async () => {
+      const { verifyUpiIdAction } = await import("./user")
+      vi.mocked(auth as any).mockResolvedValue({
+        user: { id: "auth-user-123" },
+      } as any)
+
+      // User has current UPI
+      vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+        id: "auth-user-123",
+        upiId: "myvpa@oksbi",
+      } as any)
+
+      // Verified result in cache
+      vi.mocked(prisma.upiVerification.findUnique).mockResolvedValueOnce({
+        id: "v-2",
+        upiId: "myvpa@oksbi",
+        verifiedName: "AUTH USER NAME",
+        status: "VERIFIED",
+        provider: "cashfree",
+        referenceId: "ref-999",
+        verifiedAt: new Date(),
+        expiresAt: new Date(Date.now() + 86400000),
+      } as any)
+
+      const result = await verifyUpiIdAction("myvpa@oksbi")
+      expect(result.status).toBe("VERIFIED")
+
+      // MUST update ONLY auth-user-123
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "auth-user-123" },
+          data: expect.objectContaining({
+            upiVerified: true,
+            upiVerifiedName: "AUTH USER NAME",
+          }),
+        })
+      )
     })
   })
 })

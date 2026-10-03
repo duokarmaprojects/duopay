@@ -2,16 +2,48 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
 import Link from "next/link"
-import { Users } from "lucide-react"
+import { AlertTriangle } from "lucide-react"
 import { GroupIcon } from "@/components/ui/GroupIcon"
+import { verifyGroupInviteToken } from "@/lib/invite"
+import { joinGroupWithInviteToken } from "@/actions/group"
 
-export default async function JoinGroupPage({ params }: { params: { id: string } }) {
+export default async function JoinGroupPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }> | { id: string }
+  searchParams: Promise<{ token?: string }> | { token?: string }
+}) {
+  const resolvedParams = await params
+  const resolvedSearch = (await searchParams) || {}
+  const { id } = resolvedParams
+  const token = resolvedSearch.token
+
   const session = await auth()
   if (!session?.user?.id) {
-    redirect(`/login?callbackUrl=/groups/join/${params.id}`)
+    const callback = `/groups/join/${id}${token ? `?token=${encodeURIComponent(token)}` : ""}`
+    redirect(`/login?callbackUrl=${encodeURIComponent(callback)}`)
   }
 
-  const { id } = await params
+  // Verify HMAC cryptographic invite token
+  const tokenCheck = verifyGroupInviteToken(id, token)
+
+  if (!tokenCheck.valid) {
+    return (
+      <div className="flex flex-col flex-1 bg-gray-50 h-screen items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-4">
+          <AlertTriangle size={32} />
+        </div>
+        <h1 className="text-xl font-bold text-gray-900 mb-2">Invalid or Expired Invite Link</h1>
+        <p className="text-gray-500 text-sm max-w-sm mb-6">
+          {tokenCheck.error || "This invite link is invalid or has expired. Please ask a group member for a fresh invite link."}
+        </p>
+        <Link href="/" className="bg-black text-white px-6 py-3 rounded-xl font-semibold text-sm">
+          Go Home
+        </Link>
+      </div>
+    )
+  }
 
   const group = await prisma.group.findUnique({
     where: { id },
@@ -40,16 +72,7 @@ export default async function JoinGroupPage({ params }: { params: { id: string }
 
   async function handleJoin() {
     "use server"
-    const session = await auth()
-    if (!session?.user?.id) redirect('/login')
-
-    await prisma.groupMember.create({
-      data: {
-        groupId: id,
-        userId: session.user.id
-      }
-    })
-
+    await joinGroupWithInviteToken(id, token!)
     redirect(`/groups/${id}`)
   }
 

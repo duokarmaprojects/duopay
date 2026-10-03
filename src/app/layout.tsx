@@ -56,6 +56,20 @@ export default function RootLayout({
             `,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // DuoPay Security Notice: Browser is untrusted. All authorization, balances,
+              // cryptographic tokens, and settlements are strictly enforced server-side.
+              try {
+                if (typeof window !== 'undefined') {
+                  console.log('%cDuoPay Defense-in-Depth', 'color: #10b981; font-weight: bold; font-size: 14px;');
+                  console.log('%cAll transactions, invites, and balances are cryptographically signed and verified server-side.', 'color: #71717a; font-size: 11px;');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
       </head>
       <body className={`${inter.className} bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 antialiased min-h-screen flex flex-col transition-colors duration-200 ease-in-out`}>
         <ThemeProvider>

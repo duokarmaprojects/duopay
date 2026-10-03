@@ -12,30 +12,55 @@ import {
   calculateSharesSplit,
   inrToPaise 
 } from "@/domain/money"
+import { checkActionRateLimit } from "@/lib/rateLimit"
+import { logSecurityEvent } from "@/lib/securityAudit"
+import { sanitizeTextInput, validateId } from "@/lib/security"
 
 const addExpenseSchema = z.object({
-  groupId: z.string().min(1),
-  description: z.string().min(1, "Description required"),
-  amount: z.number().positive("Amount must be positive"),
-  payerId: z.string().min(1),
+  groupId: z.string().min(1, "Group ID is required"),
+  description: z.string().min(1, "Description is required").max(100, "Description is too long"),
+  amount: z.number().positive("Amount must be positive").max(10000000, "Amount exceeds limit"),
+  payerId: z.string().min(1, "Payer ID is required"),
   participantIds: z.array(z.string()).min(1, "At least one participant required"),
   splitMethod: z.enum(["EQUAL", "PERCENTAGE", "EXACT", "SHARES"]).default("EQUAL"),
-  splitData: z.string().optional(), // JSON string of Record<string, number>
+  splitData: z.string().optional(),
   category: z.string().optional()
 })
 
 export async function addExpense(formData: FormData) {
   const session = await auth()
-  if (!session?.user?.id) throw new Error("Unauthorized")
+  if (!session?.user?.id) {
+    await logSecurityEvent({
+      type: "AUTH_UNAUTHORIZED_ACCESS",
+      details: { action: "addExpense" },
+    })
+    throw new Error("Unauthorized")
+  }
+
+  const userId = session.user.id
+
+  // Rate Limiting: max 20 expenses / min
+  const rateLimit = checkActionRateLimit("EXPENSE_CREATION", userId)
+  if (!rateLimit.allowed) {
+    await logSecurityEvent({
+      type: "RATE_LIMIT_TRIGGERED",
+      userId,
+      details: { action: "addExpense" },
+    })
+    throw new Error("Too many expenses added recently. Please wait a moment.")
+  }
 
   const groupId = formData.get("groupId") as string
-  const description = formData.get("description") as string
+  const rawDescription = formData.get("description") as string
   const amountInr = parseFloat(formData.get("amount") as string)
   const payerId = formData.get("payerId") as string
   const participantIds = formData.getAll("participants") as string[]
   const splitMethod = (formData.get("splitMethod") as string || "EQUAL") as "EQUAL" | "PERCENTAGE" | "EXACT" | "SHARES"
   const splitDataStr = formData.get("splitData") as string || "{}"
-  const category = formData.get("category") as string || "OTHER"
+  const rawCategory = formData.get("category") as string || "OTHER"
+
+  const description = sanitizeTextInput(rawDescription, 100)
+  const category = sanitizeTextInput(rawCategory, 30)
 
   const parsed = addExpenseSchema.safeParse({
     groupId,
@@ -49,23 +74,66 @@ export async function addExpense(formData: FormData) {
   })
 
   if (!parsed.success) {
+    await logSecurityEvent({
+      type: "MALICIOUS_INPUT_BLOCKED",
+      userId,
+      details: { errors: parsed.error.issues },
+    })
     throw new Error(parsed.error.issues[0].message)
   }
 
   const { data } = parsed
+  validateId(data.groupId, "groupId")
+  validateId(data.payerId, "payerId")
+  for (const pid of data.participantIds) {
+    validateId(pid, "participantId")
+  }
+
   const amountPaise = inrToPaise(data.amount)
 
-  // Validate group access
-  const isMember = await prisma.groupMember.findUnique({
-    where: { groupId_userId: { groupId: data.groupId, userId: session.user.id } }
+  // Validate group access: session user MUST be a member
+  const groupMembers = await prisma.groupMember.findMany({
+    where: { groupId: data.groupId },
+    select: { userId: true }
   })
-  if (!isMember) throw new Error("Unauthorized access to group")
+  const memberIdSet = new Set(groupMembers.map(m => m.userId))
 
-  // Parse split data
+  if (!memberIdSet.has(userId)) {
+    await logSecurityEvent({
+      type: "IDOR_ATTEMPT_BLOCKED",
+      userId,
+      details: { action: "addExpense_non_member", groupId: data.groupId },
+    })
+    throw new Error("Unauthorized: You are not a member of this group")
+  }
+
+  // Validate that payer is also a member of the group
+  if (!memberIdSet.has(data.payerId)) {
+    await logSecurityEvent({
+      type: "IDOR_ATTEMPT_BLOCKED",
+      userId,
+      details: { action: "addExpense_invalid_payer", payerId: data.payerId, groupId: data.groupId },
+    })
+    throw new Error("Specified payer is not a member of this group")
+  }
+
+  // Validate that ALL participants are members of the group
+  for (const pid of data.participantIds) {
+    if (!memberIdSet.has(pid)) {
+      await logSecurityEvent({
+        type: "IDOR_ATTEMPT_BLOCKED",
+        userId,
+        details: { action: "addExpense_invalid_participant", participantId: pid, groupId: data.groupId },
+      })
+      throw new Error(`Participant ${pid} is not a member of this group`)
+    }
+  }
+
+  // Parse split data safely
   let splitDataObj: Record<string, number> = {}
   try {
     splitDataObj = JSON.parse(data.splitData || "{}")
-  } catch (e) {
+  } catch {
     throw new Error("Invalid split data format")
   }
 
@@ -82,8 +150,12 @@ export async function addExpense(formData: FormData) {
       shares = calculateEqualSplit(amountPaise, data.participantIds)
     }
     
-    // Ensure all participants exist in the shares output and non-participants are ignored
-    // (Our domain functions guarantee safety but this ensures alignment with participantIds)
+    // Verify sum of shares equals total amount (preventing money leakage or inflation)
+    const sumShares = Object.values(shares).reduce((a, b) => a + b, 0)
+    if (sumShares !== amountPaise) {
+      throw new Error(`Split sum (${sumShares}) does not match expense amount (${amountPaise})`)
+    }
+
     for (const pid of data.participantIds) {
       if (!(pid in shares)) {
          throw new Error(`Participant ${pid} is missing a computed share`)
@@ -106,15 +178,26 @@ export async function addExpense(formData: FormData) {
       }
     })
 
-    const participantsData = data.participantIds.map(userId => ({
+    const participantsData = data.participantIds.map(pid => ({
       expenseId: expense.id,
-      userId: userId,
-      share: shares[userId]
+      userId: pid,
+      share: shares[pid]
     }))
 
     await tx.expenseParticipant.createMany({
       data: participantsData
     })
+  })
+
+  await logSecurityEvent({
+    type: "EXPENSE_CREATED",
+    userId,
+    details: {
+      groupId: data.groupId,
+      amountPaise,
+      payerId: data.payerId,
+      participantCount: data.participantIds.length,
+    },
   })
 
   revalidatePath(`/groups/${data.groupId}`)
@@ -126,13 +209,16 @@ export async function deleteExpense(expenseId: string) {
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
 
-  // Find expense to verify access
+  validateId(expenseId, "expenseId")
+
   const expense = await prisma.expense.findUnique({
     where: { id: expenseId },
     include: {
       group: {
         include: {
-          members: true
+          members: {
+            orderBy: { joinedAt: "asc" }
+          }
         }
       }
     }
@@ -140,24 +226,34 @@ export async function deleteExpense(expenseId: string) {
 
   if (!expense) throw new Error("Expense not found")
 
-  // Only allow deletion if user is a member of the group
-  const isMember = expense.group?.members.some(m => m.userId === session.user?.id)
-  
-  if (!isMember) {
-    throw new Error("Unauthorized to delete this expense")
+  // Authorization: Only the payer OR the group creator can delete an expense
+  const isPayer = expense.payerId === session.user.id
+  const isGroupCreator = expense.group?.members[0]?.userId === session.user.id
+
+  if (!isPayer && !isGroupCreator) {
+    await logSecurityEvent({
+      type: "IDOR_ATTEMPT_BLOCKED",
+      userId: session.user.id,
+      details: { action: "deleteExpense_unauthorized", expenseId },
+    })
+    throw new Error("Only the expense payer or group creator can delete this expense")
   }
 
   // Delete transactionally
   await prisma.$transaction(async (tx) => {
-    // Delete participants first due to foreign key
     await tx.expenseParticipant.deleteMany({
       where: { expenseId }
     })
     
-    // Delete expense
     await tx.expense.delete({
       where: { id: expenseId }
     })
+  })
+
+  await logSecurityEvent({
+    type: "EXPENSE_DELETED",
+    userId: session.user.id,
+    details: { expenseId, groupId: expense.groupId },
   })
 
   revalidatePath(`/groups/${expense.groupId}`)

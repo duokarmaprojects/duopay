@@ -10,7 +10,7 @@ import {
 import { getUserBalances } from "@/services/balance"
 import ProfileImageUpload from "./upload-form"
 import AppearanceSettings from "./AppearanceSettings"
-import UpiModal from "./UpiModal"
+import UpiModal, { UpiDetailsCard } from "./UpiModal"
 
 export default async function ProfilePage() {
   const session = await auth()
@@ -113,15 +113,7 @@ export default async function ProfilePage() {
         {/* 4. Quick Actions */}
         <SectionTitle>Quick Actions</SectionTitle>
         <div className="px-6 flex gap-3">
-          <Link href="#" className="flex-1 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex flex-col gap-3 active:scale-95 transition-transform">
-            <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-              <CreditCard size={18} />
-            </div>
-            <div>
-              <p className="font-semibold text-sm text-gray-900">UPI Details</p>
-              <p className="text-[10px] text-gray-500 mt-0.5">Edit payment info</p>
-            </div>
-          </Link>
+          <UpiDetailsCard />
           <Link href="/groups" className="flex-1 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex flex-col gap-3 active:scale-95 transition-transform">
             <div className="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center">
               <PieChart size={18} />

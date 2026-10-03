@@ -3,12 +3,19 @@
 import { useState } from "react";
 import { Share2, Copy, Check, MessageSquare } from "lucide-react";
 
-export default function ShareInviteLink({ groupId }: { groupId: string }) {
+export default function ShareInviteLink({
+  groupId,
+  inviteToken,
+}: {
+  groupId: string;
+  inviteToken?: string;
+}) {
   const [copied, setCopied] = useState(false);
 
   const getInviteUrl = () => {
     if (typeof window === "undefined") return "";
-    return `${window.location.origin}/groups/join/${groupId}`;
+    const tokenParam = inviteToken ? `?token=${encodeURIComponent(inviteToken)}` : "";
+    return `${window.location.origin}/groups/join/${groupId}${tokenParam}`;
   };
 
   const shareText = `Join my group on DuoPay — split expenses and settle up with ease! 💸`;

@@ -97,7 +97,7 @@ export default async function SettlePage({
           {!receiver.upiVerified && (
             <div className="mt-1 p-2.5 bg-amber-50/80 rounded-xl border border-amber-200/60 text-[11px] text-amber-800 flex items-start gap-2">
               <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5" />
-              <span>This UPI ID has not been verified by a banking provider. Please confirm with {receiver.name} before paying.</span>
+              <span>⚠ This UPI ID has not been verified. Please confirm with {receiver.name} before paying.</span>
             </div>
           )}
         </div>

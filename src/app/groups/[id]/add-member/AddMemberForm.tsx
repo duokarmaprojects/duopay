@@ -6,7 +6,13 @@ import ShareInviteLink from "./ShareInviteLink"
 import { addMemberToGroup } from "@/actions/group"
 import { useRouter } from "next/navigation"
 
-export default function AddMemberForm({ groupId }: { groupId: string }) {
+export default function AddMemberForm({
+  groupId,
+  inviteToken,
+}: {
+  groupId: string
+  inviteToken?: string
+}) {
   const [phoneOrUpi, setPhoneOrUpi] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -60,7 +66,7 @@ export default function AddMemberForm({ groupId }: { groupId: string }) {
 
         <div className="flex flex-col gap-3">
           <ContactPicker onSelectUser={(phone) => setPhoneOrUpi(phone)} groupId={groupId} />
-          <ShareInviteLink groupId={groupId} />
+          <ShareInviteLink groupId={groupId} inviteToken={inviteToken} />
         </div>
       </div>
 

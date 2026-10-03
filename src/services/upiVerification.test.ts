@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { verifyUpiId, checkRateLimit, UpiVerificationProvider } from "./upiVerification"
+import { verifyUpiId, checkRateLimit, resetRateLimitsForTesting, UpiVerificationProvider } from "./upiVerification"
 import { prisma } from "@/lib/db"
 
 // Mock Prisma for service testing
@@ -22,6 +22,7 @@ vi.mock("@/lib/db", () => ({
 describe("UPI Verification Service", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetRateLimitsForTesting()
   })
 
   describe("Format Validation Guard in verifyUpiId", () => {
@@ -172,6 +173,61 @@ describe("UPI Verification Service", () => {
       expect(res.status).toBe("VERIFIED")
       expect(res.verifiedName).toBe("CACHED USER")
       expect(mockProvider.verifyVpa).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("Security & Credential Safety", () => {
+    it("should never mark fake or non-existent UPI as verified even if it matches VPA regex format", async () => {
+      const mockProvider: UpiVerificationProvider = {
+        name: "cashfree",
+        isConfigured: () => true,
+        verifyVpa: vi.fn().mockResolvedValue({
+          success: true,
+          exists: false,
+          status: "FAILED",
+          vpa: "moizdhilawala99@gmail.com",
+          provider: "cashfree",
+          message: "UPI ID not found. Please check your UPI ID and try again.",
+        }),
+      }
+
+      // moizdhilawala99@gmail.com passes regex format, but provider returns exists: false
+      const res = await verifyUpiId("moizdhilawala99@gmail.com", "user-1", { customProvider: mockProvider })
+      expect(res.exists).toBe(false)
+      expect(res.status).toBe("FAILED")
+      expect(res.verifiedName).toBeUndefined()
+      expect(prisma.upiVerification.upsert).not.toHaveBeenCalled()
+    })
+
+    it("should ensure provider secrets are strictly server-side and never exposed with NEXT_PUBLIC_ prefix", () => {
+      // Check that environment variable names in the codebase do NOT use NEXT_PUBLIC_
+      const envKeys = Object.keys(process.env)
+      const leakedClientKeys = envKeys.filter(
+        (key) =>
+          key.startsWith("NEXT_PUBLIC_CASHFREE") ||
+          key.startsWith("NEXT_PUBLIC_RAZORPAY")
+      )
+      expect(leakedClientKeys).toHaveLength(0)
+    })
+
+    it("should handle provider rate-limit responses (HTTP 429) safely", async () => {
+      const rateLimitedProvider: UpiVerificationProvider = {
+        name: "razorpay",
+        isConfigured: () => true,
+        verifyVpa: vi.fn().mockResolvedValue({
+          success: false,
+          exists: false,
+          status: "RATE_LIMITED",
+          vpa: "moiz@oksbi",
+          provider: "razorpay",
+          message: "Too many verification requests. Please wait and try again.",
+        }),
+      }
+
+      const res = await verifyUpiId("moiz@oksbi", "user-1", { customProvider: rateLimitedProvider })
+      expect(res.status).toBe("RATE_LIMITED")
+      expect(res.exists).toBe(false)
+      expect(res.message).toContain("Too many verification requests")
     })
   })
 

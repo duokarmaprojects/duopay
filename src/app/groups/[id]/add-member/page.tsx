@@ -3,12 +3,14 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import AddMemberForm from "./AddMemberForm"
+import { generateGroupInviteToken } from "@/lib/invite"
 
-export default async function AddMemberPage({ params }: { params: { id: string } }) {
+export default async function AddMemberPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   const session = await auth()
-  if (!session) redirect('/login')
+  if (!session?.user?.id) redirect('/login')
 
   const { id } = await params
+  const inviteToken = generateGroupInviteToken(id, session.user.id)
 
   return (
     <div className="flex flex-col flex-1 bg-white h-screen">
@@ -20,8 +22,9 @@ export default async function AddMemberPage({ params }: { params: { id: string }
       </header>
 
       <div className="p-6">
-        <AddMemberForm groupId={id} />
+        <AddMemberForm groupId={id} inviteToken={inviteToken} />
       </div>
     </div>
   )
 }
+

@@ -82,26 +82,61 @@ class CashfreeUpiVerificationProvider implements UpiVerificationProvider {
       const data = await response.json()
 
       if (!response.ok) {
+        if (response.status === 429) {
+          return {
+            success: false,
+            exists: false,
+            status: "RATE_LIMITED",
+            vpa,
+            provider: "cashfree",
+            message: "Too many verification requests. Please wait and try again.",
+          }
+        }
+        if (response.status === 401 || response.status === 403) {
+          return {
+            success: false,
+            exists: false,
+            status: "UNAVAILABLE",
+            vpa,
+            provider: "cashfree",
+            message: "Verification temporarily unavailable. Please try again later.",
+          }
+        }
         return {
           success: false,
           exists: false,
           status: "FAILED",
           vpa,
           provider: "cashfree",
-          message: data.message || "Failed to verify UPI ID with verification provider.",
+          message: "UPI ID not found. Please check your UPI ID and try again.",
         }
       }
 
-      // Cashfree returns { valid: true/false, name_at_bank: string, ref_id: string }
-      if (data.valid === true) {
+      // Cashfree returns valid: true/false or account_status: "VALID"/"INVALID"
+      const isValid =
+        data.valid === true ||
+        data.account_status === "VALID" ||
+        (data.status === "SUCCESS" && data.account_status !== "INVALID")
+      const verifiedName =
+        data.name_at_bank ||
+        data.nameAtBank ||
+        data.registered_name ||
+        undefined
+      const referenceId = data.ref_id
+        ? String(data.ref_id)
+        : data.reference_id
+        ? String(data.reference_id)
+        : undefined
+
+      if (isValid) {
         return {
           success: true,
           exists: true,
           status: "VERIFIED",
           vpa,
-          verifiedName: data.name_at_bank || undefined,
+          verifiedName,
           provider: "cashfree",
-          referenceId: data.ref_id ? String(data.ref_id) : undefined,
+          referenceId,
           message: "UPI ID verified successfully.",
         }
       }
@@ -112,8 +147,8 @@ class CashfreeUpiVerificationProvider implements UpiVerificationProvider {
         status: "FAILED",
         vpa,
         provider: "cashfree",
-        referenceId: data.ref_id ? String(data.ref_id) : undefined,
-        message: "UPI ID could not be confirmed. Please check the UPI ID and try again.",
+        referenceId,
+        message: "UPI ID not found. Please check your UPI ID and try again.",
       }
     } catch (err: any) {
       clearTimeout(timeout)
@@ -126,7 +161,7 @@ class CashfreeUpiVerificationProvider implements UpiVerificationProvider {
         provider: "cashfree",
         message: isTimeout
           ? "Verification provider timed out. Please try again later."
-          : "Unable to verify right now. Please try again later.",
+          : "Verification temporarily unavailable. Please try again later.",
       }
     }
   }
@@ -169,13 +204,33 @@ class RazorpayUpiVerificationProvider implements UpiVerificationProvider {
       const data = await response.json()
 
       if (!response.ok) {
+        if (response.status === 429) {
+          return {
+            success: false,
+            exists: false,
+            status: "RATE_LIMITED",
+            vpa,
+            provider: "razorpay",
+            message: "Too many verification requests. Please wait and try again.",
+          }
+        }
+        if (response.status === 401 || response.status === 403) {
+          return {
+            success: false,
+            exists: false,
+            status: "UNAVAILABLE",
+            vpa,
+            provider: "razorpay",
+            message: "Verification temporarily unavailable. Please try again later.",
+          }
+        }
         return {
           success: false,
           exists: false,
           status: "FAILED",
           vpa,
           provider: "razorpay",
-          message: data.error?.description || "UPI ID verification failed.",
+          message: "UPI ID not found. Please check your UPI ID and try again.",
         }
       }
 
@@ -188,6 +243,7 @@ class RazorpayUpiVerificationProvider implements UpiVerificationProvider {
           vpa,
           verifiedName: data.customer_name || undefined,
           provider: "razorpay",
+          referenceId: data.vpa ? String(data.vpa) : undefined,
           message: "UPI ID verified successfully.",
         }
       }
@@ -198,7 +254,7 @@ class RazorpayUpiVerificationProvider implements UpiVerificationProvider {
         status: "FAILED",
         vpa,
         provider: "razorpay",
-        message: "UPI ID could not be confirmed. Please check the UPI ID and try again.",
+        message: "UPI ID not found. Please check your UPI ID and try again.",
       }
     } catch (err: any) {
       clearTimeout(timeout)
@@ -211,7 +267,7 @@ class RazorpayUpiVerificationProvider implements UpiVerificationProvider {
         provider: "razorpay",
         message: isTimeout
           ? "Verification provider timed out. Please try again later."
-          : "Unable to verify right now. Please try again later.",
+          : "Verification temporarily unavailable. Please try again later.",
       }
     }
   }
@@ -249,6 +305,10 @@ export function checkRateLimit(userId: string, maxAttempts = 5, windowMs = 10 * 
   validTimestamps.push(now)
   rateLimitMap.set(userId, validTimestamps)
   return true
+}
+
+export function resetRateLimitsForTesting(): void {
+  rateLimitMap.clear()
 }
 
 /**
