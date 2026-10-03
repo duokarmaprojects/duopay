@@ -16,7 +16,12 @@ export default auth((req) => {
   if (isAuthRoute) {
     response = NextResponse.next()
   } else if (isLoginRoute) {
-    if (isLoggedIn) {
+    if (nextUrl.searchParams.has('expired')) {
+      response = NextResponse.next()
+      response.cookies.delete("authjs.session-token")
+      response.cookies.delete("__Secure-authjs.session-token")
+      return response
+    } else if (isLoggedIn) {
       response = NextResponse.redirect(new URL('/', nextUrl))
     } else {
       response = NextResponse.next()

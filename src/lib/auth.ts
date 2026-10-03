@@ -76,6 +76,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.upiId = dbUser.upiId
           token.role = dbUser.role
           token.picture = dbUser.image ? `/api/users/${token.id}/avatar` : null
+        } else {
+          return null
         }
       }
       // CRITICAL: NEVER store raw data: URLs in token (prevents Vercel 494 REQUEST_HEADER_TOO_LARGE)

@@ -21,7 +21,7 @@ export default async function ProfilePage() {
   if (!session?.user?.id) redirect('/login')
 
   const user = await prisma.user.findUnique({ where: { id: session.user.id } })
-  if (!user) redirect('/login')
+  if (!user) redirect('/login?expired=1')
 
   const [
     { totalOwedToUser, totalUserOwes },

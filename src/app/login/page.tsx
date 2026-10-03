@@ -2,11 +2,20 @@ import { signIn, auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { LoginForm } from "./LoginForm"
 
+import { prisma } from "@/lib/db"
+
 export default async function LoginPage() {
   const session = await auth()
   
-  if (session) {
-    redirect('/')
+  if (session?.user?.id) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true },
+    })
+
+    if (dbUser) {
+      redirect('/')
+    }
   }
 
   async function handleLogin(formData: FormData) {

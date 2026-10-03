@@ -11,7 +11,9 @@ import DashboardView from "./components/DashboardView"
 export default async function HomePage() {
   const session = await auth()
   
-  if (!session?.user?.id) return null
+  if (!session?.user?.id) {
+    redirect('/login')
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -23,7 +25,7 @@ export default async function HomePage() {
   })
 
   if (!user) {
-    redirect('/login')
+    redirect('/login?expired=1')
   }
 
   if (!user.phone || !user.upiId || !user.name || user.name === "New User") {

@@ -31,7 +31,7 @@ export default async function RewardsPage() {
 
   const user = await prisma.user.findUnique({ where: { id: session.user.id } })
   if (!user) {
-    redirect("/login")
+    redirect("/login?expired=1")
   }
 
   const [summary, history] = await Promise.all([
