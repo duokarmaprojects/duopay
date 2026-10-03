@@ -56,6 +56,23 @@ export async function recordSettlement(formData: FormData) {
     throw new Error("Too many settlement attempts. Please wait a minute before trying again.")
   }
 
+  // Block client-side tampering: reject any client attempting to submit verification or provider status
+  if (
+    formData.has("status") ||
+    formData.has("paymentStatus") ||
+    formData.has("verificationMethod") ||
+    formData.has("providerTransactionId") ||
+    formData.has("verifiedAt") ||
+    formData.has("verifiedAmount")
+  ) {
+    await logSecurityEvent({
+      type: "MALICIOUS_INPUT_BLOCKED",
+      userId: payerId,
+      details: { action: "recordSettlement_client_claimed_verification_blocked" },
+    })
+    throw new Error("Client submission of payment verification state is strictly prohibited")
+  }
+
   const rawReceiverId = formData.get("receiverId")
   const rawAmountPaise = formData.get("amountPaise")
   const rawGroupId = formData.get("groupId")
@@ -182,8 +199,13 @@ export async function recordSettlement(formData: FormData) {
           amount: amountPaise,
           groupId: groupId || null,
           status: "COMPLETED",
-          paymentStatus: "PAYMENT_SUCCESS",
+          paymentStatus: "MANUAL_CONFIRMED",
           paymentProvider: "manual_confirmation",
+          verificationMethod: "MANUAL_PEER_CONFIRMATION",
+          verifiedAt: new Date(),
+          verifiedAmount: amountPaise,
+          providerTransactionId: null,
+          processedEventId: null,
           idempotencyKey: effectiveIdempotencyKey,
           settledAt: new Date(),
           payeeUpiId: receiver.upiId || null,

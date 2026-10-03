@@ -109,6 +109,7 @@ export async function POST(req: NextRequest) {
     let amountInPaise: number | null = null
     let eventType: string = ""
     let isSuccessEvent = false
+    let eventId: string | null = null
 
     if (provider === "razorpay") {
       eventType = payload.event || ""
@@ -117,6 +118,11 @@ export async function POST(req: NextRequest) {
       settlementId = paymentEntity?.notes?.settlementId || null
       amountInPaise = paymentEntity?.amount || null
       isSuccessEvent = eventType === "payment.captured" || eventType === "order.paid"
+      eventId =
+        req.headers.get("x-razorpay-event-id") ||
+        payload.event_id ||
+        payload.eventId ||
+        (transactionId ? `rzp_evt_${eventType}_${transactionId}` : null)
     } else if (provider === "cashfree") {
       eventType = payload.type || payload.event || ""
       const order = payload.data?.order || payload.order
@@ -125,6 +131,10 @@ export async function POST(req: NextRequest) {
       settlementId = order?.order_tags?.settlementId || order?.order_id || null
       amountInPaise = order?.order_amount ? Math.round(order.order_amount * 100) : null
       isSuccessEvent = eventType === "PAYMENT_SUCCESS_WEBHOOK" || payment?.payment_status === "SUCCESS"
+      eventId =
+        payload.event_id ||
+        payload.eventId ||
+        (transactionId ? `cf_evt_${eventType}_${transactionId}` : null)
     }
 
     if (!settlementId) {
@@ -135,6 +145,23 @@ export async function POST(req: NextRequest) {
     // =========================================================================
     // 4. DATABASE TRANSACTION & ATOMIC RECONCILIATION
     // =========================================================================
+
+    // Event replay defense: check if this event ID was already processed
+    if (eventId) {
+      const alreadyProcessedEvent = await prisma.settlement.findUnique({
+        where: { processedEventId: eventId },
+      })
+      if (alreadyProcessedEvent) {
+        return NextResponse.json({
+          received: true,
+          idempotent: true,
+          replayed: true,
+          paymentStatus: alreadyProcessedEvent.paymentStatus,
+          settlementId: alreadyProcessedEvent.id,
+        })
+      }
+    }
+
     const settlement = await prisma.settlement.findUnique({
       where: { id: settlementId },
     })
@@ -157,9 +184,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Amount mismatch" }, { status: 400 })
     }
 
-    // Idempotency: duplicate webhooks must not duplicate or corrupt settlement
-    if (settlement.status === "SETTLED" || settlement.status === "COMPLETED") {
-      return NextResponse.json({ received: true, idempotent: true, status: settlement.status })
+    // Idempotency: duplicate webhooks for already provider-verified record
+    if (
+      settlement.paymentStatus === "WEBHOOK_VERIFIED" ||
+      settlement.paymentStatus === "PROVIDER_VERIFIED"
+    ) {
+      return NextResponse.json({
+        received: true,
+        idempotent: true,
+        status: settlement.status,
+        paymentStatus: settlement.paymentStatus,
+      })
     }
 
     if (isSuccessEvent) {
@@ -167,33 +202,54 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Invalid settlement state transition" }, { status: 409 })
       }
 
-      await prisma.$transaction(async (tx) => {
-        await tx.settlement.update({
-          where: { id: settlementId },
-          data: {
-            status: "SETTLED",
-            paymentStatus: "PAYMENT_SUCCESS",
-            paymentProvider: provider,
-            providerTransactionId: transactionId,
-            paymentCompletedAt: new Date(),
-            settledAt: new Date(),
-          },
+      try {
+        await prisma.$transaction(async (tx) => {
+          await tx.settlement.update({
+            where: { id: settlementId },
+            data: {
+              status: "SETTLED",
+              paymentStatus: "WEBHOOK_VERIFIED",
+              paymentProvider: provider,
+              providerTransactionId: transactionId,
+              verificationMethod: "WEBHOOK_HMAC",
+              verifiedAt: new Date(),
+              verifiedAmount: amountInPaise || settlement.amount,
+              processedEventId: eventId,
+              paymentCompletedAt: new Date(),
+              settledAt: settlement.settledAt || new Date(),
+            },
+          })
         })
-      })
+      } catch (dbErr: any) {
+        if (dbErr?.code === "P2002" || String(dbErr?.message || "").includes("processedEventId")) {
+          return NextResponse.json({
+            received: true,
+            idempotent: true,
+            replayed: true,
+          })
+        }
+        throw dbErr
+      }
 
       await logSecurityEvent({
         type: "FINANCIAL_SETTLEMENT_RECORDED",
         userId: settlement.payerId,
         details: {
-          action: "webhook_reconciled",
+          action: "webhook_verified",
           settlementId,
           provider,
           amountPaise: settlement.amount,
+          verificationMethod: "WEBHOOK_HMAC",
+          providerTransactionId: transactionId,
         },
       })
     }
 
-    return NextResponse.json({ received: true, success: true })
+    return NextResponse.json({
+      received: true,
+      success: true,
+      paymentStatus: "WEBHOOK_VERIFIED",
+    })
   } catch (error: any) {
     console.error("[WEBHOOK ERROR] Internal processing failure:", error)
     return NextResponse.json({ error: "Internal processing error" }, { status: 500 })

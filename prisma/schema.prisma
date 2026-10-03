@@ -126,9 +126,13 @@ model Settlement {
   receiverId            String
   amount                Int       // In paise
   status                String    @default("COMPLETED") // INITIATED, COMPLETED, SETTLED, CANCELLED, FAILED
-  paymentStatus         String    @default("PAYMENT_PENDING") // PAYMENT_INITIATED, PAYMENT_PENDING, PAYMENT_SUCCESS, PAYMENT_FAILED, PAYMENT_CANCELLED, PAYMENT_UNKNOWN
-  paymentProvider       String?   // upi_intent, razorpay, cashfree, manual_confirmation
+  paymentStatus         String    @default("MANUAL_CONFIRMED") // MANUAL_CONFIRMED, PROVIDER_INITIATED, PROVIDER_VERIFIED, WEBHOOK_VERIFIED, PENDING, FAILED, UNKNOWN
+  paymentProvider       String?   // manual_confirmation, upi_intent, razorpay, cashfree
   providerTransactionId String?   // UTR or gateway payment ID
+  verificationMethod    String?   // MANUAL_PEER_CONFIRMATION, WEBHOOK_HMAC, SERVER_API_QUERY, NONE
+  verifiedAt            DateTime?
+  verifiedAmount        Int?      // In paise
+  processedEventId      String?   @unique // Provider webhook event ID for strict replay prevention
   paymentInitiatedAt    DateTime?
   paymentCompletedAt    DateTime?
   paymentFailureReason  String?

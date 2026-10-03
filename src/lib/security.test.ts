@@ -22,6 +22,11 @@ import { deleteGroup, joinGroupWithInviteToken } from "@/actions/group"
 import { getUserBalances } from "@/services/balance"
 import { sanitizeEventDetails } from "./securityAudit"
 import { POST as handlePaymentWebhook } from "@/app/api/webhooks/payments/route"
+import {
+  isAllowedPaymentStatusTransition,
+  isPaymentVerified,
+  isPaymentManual,
+} from "@/domain/payment"
 import crypto from "crypto"
 
 vi.mock("@/lib/auth", () => ({
@@ -292,6 +297,31 @@ describe("Production Security Hardening Test Suite", () => {
       expect(isAllowedSettlementTransition("CANCELLED", "COMPLETED")).toBe(false)
       expect(isAllowedSettlementTransition("FAILED", "COMPLETED")).toBe(false)
     })
+
+    it("should enforce payment verification state machine transitions", () => {
+      // PENDING can transition forward
+      expect(isAllowedPaymentStatusTransition("PENDING", "PROVIDER_INITIATED")).toBe(true)
+      expect(isAllowedPaymentStatusTransition("PENDING", "WEBHOOK_VERIFIED")).toBe(true)
+      expect(isAllowedPaymentStatusTransition("PENDING", "MANUAL_CONFIRMED")).toBe(true)
+      expect(isAllowedPaymentStatusTransition("PENDING", "FAILED")).toBe(true)
+
+      // MANUAL_CONFIRMED can be upgraded by provider webhook verification
+      expect(isAllowedPaymentStatusTransition("MANUAL_CONFIRMED", "WEBHOOK_VERIFIED")).toBe(true)
+      expect(isAllowedPaymentStatusTransition("MANUAL_CONFIRMED", "PROVIDER_VERIFIED")).toBe(true)
+
+      // Terminal verified states cannot be downgraded or altered
+      expect(isAllowedPaymentStatusTransition("WEBHOOK_VERIFIED", "MANUAL_CONFIRMED")).toBe(false)
+      expect(isAllowedPaymentStatusTransition("WEBHOOK_VERIFIED", "PENDING")).toBe(false)
+      expect(isAllowedPaymentStatusTransition("WEBHOOK_VERIFIED", "FAILED")).toBe(false)
+      expect(isAllowedPaymentStatusTransition("PROVIDER_VERIFIED", "MANUAL_CONFIRMED")).toBe(false)
+
+      // Status helper functions
+      expect(isPaymentVerified("WEBHOOK_VERIFIED")).toBe(true)
+      expect(isPaymentVerified("PROVIDER_VERIFIED")).toBe(true)
+      expect(isPaymentVerified("MANUAL_CONFIRMED")).toBe(false)
+      expect(isPaymentManual("MANUAL_CONFIRMED")).toBe(true)
+      expect(isPaymentManual("WEBHOOK_VERIFIED")).toBe(false)
+    })
   })
 
   // =========================================================================
@@ -413,6 +443,62 @@ describe("Production Security Hardening Test Suite", () => {
       // Should redirect gracefully without calling tx.settlement.create
       await expect(recordSettlement(formData)).rejects.toThrow("REDIRECT:/")
       expect(prisma.settlement.create).not.toHaveBeenCalled()
+    })
+
+    it("should reject client attempting to submit payment verification fields", async () => {
+      const formData = new FormData()
+      formData.set("receiverId", "user-bob")
+      formData.set("amountPaise", "1000")
+      formData.set("paymentStatus", "WEBHOOK_VERIFIED")
+
+      await expect(recordSettlement(formData)).rejects.toThrow(
+        "Client submission of payment verification state is strictly prohibited"
+      )
+    })
+
+    it("should record legitimate manual confirmation with MANUAL_CONFIRMED and MANUAL_PEER_CONFIRMATION", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+        id: "user-bob",
+        name: "Bob",
+        upiId: "bob@oksbi",
+      } as any)
+
+      vi.mocked(getUserBalances).mockResolvedValueOnce({
+        totalOwedToUser: 0,
+        totalUserOwes: 1000,
+        detailedBalances: [
+          {
+            userId: "user-bob",
+            userName: "Bob",
+            amount: 1000,
+            type: "USER_OWES",
+          },
+        ],
+      })
+
+      vi.mocked(prisma.settlement.findUnique).mockResolvedValueOnce(null)
+
+      const formData = new FormData()
+      formData.set("receiverId", "user-bob")
+      formData.set("amountPaise", "1000")
+
+      await expect(recordSettlement(formData)).rejects.toThrow("REDIRECT:/")
+      expect(prisma.settlement.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            payerId: "user-alice",
+            receiverId: "user-bob",
+            amount: 1000,
+            status: "COMPLETED",
+            paymentStatus: "MANUAL_CONFIRMED",
+            paymentProvider: "manual_confirmation",
+            verificationMethod: "MANUAL_PEER_CONFIRMATION",
+            verifiedAmount: 1000,
+            providerTransactionId: null,
+            processedEventId: null,
+          }),
+        })
+      )
     })
   })
 
@@ -571,9 +657,10 @@ describe("Production Security Hardening Test Suite", () => {
       expect(data.error).toBe("Invalid webhook signature")
     })
 
-    it("should verify valid Razorpay HMAC signature and settle record", async () => {
+    it("should verify valid Razorpay HMAC signature, settle record, and record provider verification", async () => {
       const secret = "test-webhook-secret"
       const payloadObj = {
+        event_id: "evt_rzp_test_101",
         event: "payment.captured",
         payload: {
           payment: {
@@ -591,12 +678,15 @@ describe("Production Security Hardening Test Suite", () => {
         .update(rawBody)
         .digest("hex")
 
-      vi.mocked(prisma.settlement.findUnique).mockResolvedValueOnce({
-        id: "settle-1",
-        amount: 5000,
-        status: "PENDING",
-        payerId: "user-alice",
-      } as any)
+      // Event replay check -> not yet processed
+      vi.mocked(prisma.settlement.findUnique)
+        .mockResolvedValueOnce(null) // for processedEventId check
+        .mockResolvedValueOnce({
+          id: "settle-1",
+          amount: 5000,
+          status: "PENDING",
+          payerId: "user-alice",
+        } as any) // for settlement lookup
 
       const req = new Request("http://localhost/api/webhooks/payments", {
         method: "POST",
@@ -608,13 +698,83 @@ describe("Production Security Hardening Test Suite", () => {
       expect(res.status).toBe(200)
       const json = await res.json()
       expect(json.success).toBe(true)
+      expect(json.paymentStatus).toBe("WEBHOOK_VERIFIED")
       expect(prisma.settlement.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: "settle-1" },
           data: expect.objectContaining({
             status: "SETTLED",
-            paymentStatus: "PAYMENT_SUCCESS",
+            paymentStatus: "WEBHOOK_VERIFIED",
+            paymentProvider: "razorpay",
             providerTransactionId: "pay_12345",
+            verificationMethod: "WEBHOOK_HMAC",
+            verifiedAmount: 5000,
+            processedEventId: "evt_rzp_test_101",
+          }),
+        })
+      )
+    })
+
+    it("should verify valid Cashfree HMAC signature and reconcile settlement", async () => {
+      process.env = { ...originalEnv, CASHFREE_CLIENT_SECRET: "test-cashfree-secret" }
+      const secret = "test-cashfree-secret"
+      const timestamp = String(Math.floor(Date.now() / 1000))
+      const payloadObj = {
+        type: "PAYMENT_SUCCESS_WEBHOOK",
+        event_id: "evt_cf_test_202",
+        data: {
+          order: {
+            order_id: "order_123",
+            order_amount: 50.0, // 5000 paise
+            order_tags: { settlementId: "settle-1" },
+          },
+          payment: {
+            payment_id: "cf_pay_999",
+            payment_status: "SUCCESS",
+          },
+        },
+      }
+      const rawBody = JSON.stringify(payloadObj)
+      const signaturePayload = `${timestamp}${rawBody}`
+      const validSignature = crypto
+        .createHmac("sha256", secret)
+        .update(signaturePayload)
+        .digest("base64")
+
+      vi.mocked(prisma.settlement.findUnique)
+        .mockResolvedValueOnce(null) // processedEventId check
+        .mockResolvedValueOnce({
+          id: "settle-1",
+          amount: 5000,
+          status: "PENDING",
+          payerId: "user-alice",
+        } as any)
+
+      const req = new Request("http://localhost/api/webhooks/payments", {
+        method: "POST",
+        headers: {
+          "x-webhook-signature": validSignature,
+          "x-webhook-timestamp": timestamp,
+        },
+        body: rawBody,
+      })
+
+      const res = await handlePaymentWebhook(req as any)
+      expect(res.status).toBe(200)
+      const json = await res.json()
+      expect(json.success).toBe(true)
+      expect(json.paymentStatus).toBe("WEBHOOK_VERIFIED")
+      expect(prisma.settlement.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "settle-1" },
+          data: expect.objectContaining({
+            status: "SETTLED",
+            paymentStatus: "WEBHOOK_VERIFIED",
+            paymentProvider: "cashfree",
+            providerTransactionId: "cf_pay_999",
+            verificationMethod: "WEBHOOK_HMAC",
+            verifiedAmount: 5000,
+            processedEventId: "evt_cf_test_202",
           }),
         })
       )
@@ -640,11 +800,13 @@ describe("Production Security Hardening Test Suite", () => {
         .update(rawBody)
         .digest("hex")
 
-      vi.mocked(prisma.settlement.findUnique).mockResolvedValueOnce({
-        id: "settle-1",
-        amount: 5000, // Settlement expects 5000 paise
-        status: "PENDING",
-      } as any)
+      vi.mocked(prisma.settlement.findUnique)
+        .mockResolvedValueOnce(null) // processedEventId check
+        .mockResolvedValueOnce({
+          id: "settle-1",
+          amount: 5000, // Settlement expects 5000 paise
+          status: "PENDING",
+        } as any)
 
       const req = new Request("http://localhost/api/webhooks/payments", {
         method: "POST",
@@ -659,7 +821,44 @@ describe("Production Security Hardening Test Suite", () => {
       expect(prisma.settlement.update).not.toHaveBeenCalled()
     })
 
-    it("should be idempotent when duplicate webhook is delivered for already settled record", async () => {
+    it("should reject webhook if settlement transaction is not found", async () => {
+      const secret = "test-webhook-secret"
+      const payloadObj = {
+        event: "payment.captured",
+        payload: {
+          payment: {
+            entity: {
+              id: "pay_99999",
+              amount: 5000,
+              notes: { settlementId: "nonexistent-settlement" },
+            },
+          },
+        },
+      }
+      const rawBody = JSON.stringify(payloadObj)
+      const validSignature = crypto
+        .createHmac("sha256", secret)
+        .update(rawBody)
+        .digest("hex")
+
+      vi.mocked(prisma.settlement.findUnique)
+        .mockResolvedValueOnce(null) // processedEventId check
+        .mockResolvedValueOnce(null) // settlement lookup returns null
+
+      const req = new Request("http://localhost/api/webhooks/payments", {
+        method: "POST",
+        headers: { "x-razorpay-signature": validSignature },
+        body: rawBody,
+      })
+
+      const res = await handlePaymentWebhook(req as any)
+      expect(res.status).toBe(404)
+      const json = await res.json()
+      expect(json.error).toBe("Settlement record not found")
+      expect(prisma.settlement.update).not.toHaveBeenCalled()
+    })
+
+    it("should be idempotent when duplicate webhook is delivered for already verified record", async () => {
       const secret = "test-webhook-secret"
       const payloadObj = {
         event: "payment.captured",
@@ -679,10 +878,55 @@ describe("Production Security Hardening Test Suite", () => {
         .update(rawBody)
         .digest("hex")
 
-      // Settlement is ALREADY SETTLED
+      // Settlement is ALREADY WEBHOOK_VERIFIED
+      vi.mocked(prisma.settlement.findUnique)
+        .mockResolvedValueOnce(null) // processedEventId check
+        .mockResolvedValueOnce({
+          id: "settle-1",
+          amount: 5000,
+          status: "SETTLED",
+          paymentStatus: "WEBHOOK_VERIFIED",
+        } as any)
+
+      const req = new Request("http://localhost/api/webhooks/payments", {
+        method: "POST",
+        headers: { "x-razorpay-signature": validSignature },
+        body: rawBody,
+      })
+
+      const res = await handlePaymentWebhook(req as any)
+      expect(res.status).toBe(200)
+      const json = await res.json()
+      expect(json.idempotent).toBe(true)
+      expect(prisma.settlement.update).not.toHaveBeenCalled()
+    })
+
+    it("should safely reject/handle replayed webhook when event ID was already processed", async () => {
+      const secret = "test-webhook-secret"
+      const payloadObj = {
+        event_id: "evt_already_processed_001",
+        event: "payment.captured",
+        payload: {
+          payment: {
+            entity: {
+              id: "pay_12345",
+              amount: 5000,
+              notes: { settlementId: "settle-1" },
+            },
+          },
+        },
+      }
+      const rawBody = JSON.stringify(payloadObj)
+      const validSignature = crypto
+        .createHmac("sha256", secret)
+        .update(rawBody)
+        .digest("hex")
+
+      // Event replay check finds matching processedEventId
       vi.mocked(prisma.settlement.findUnique).mockResolvedValueOnce({
         id: "settle-1",
-        amount: 5000,
+        processedEventId: "evt_already_processed_001",
+        paymentStatus: "WEBHOOK_VERIFIED",
         status: "SETTLED",
       } as any)
 
@@ -696,6 +940,7 @@ describe("Production Security Hardening Test Suite", () => {
       expect(res.status).toBe(200)
       const json = await res.json()
       expect(json.idempotent).toBe(true)
+      expect(json.replayed).toBe(true)
       expect(prisma.settlement.update).not.toHaveBeenCalled()
     })
   })
