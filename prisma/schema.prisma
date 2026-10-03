@@ -308,6 +308,7 @@ model Notification {
   body        String
   url         String?   // Same-origin relative path only
   metadata    String?   // JSON string
+  dedupKey    String?   @unique // Durable server-side idempotency across instances/cold starts
   readAt      DateTime?
   createdAt   DateTime  @default(now())
 
@@ -315,6 +316,7 @@ model Notification {
 
   @@index([userId, readAt])
   @@index([userId, createdAt])
+  @@index([dedupKey])
 }
 
 

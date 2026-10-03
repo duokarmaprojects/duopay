@@ -305,6 +305,32 @@ describe("PRODUCTION WEB PUSH & NOTIFICATIONS TEST SUITE", () => {
       expect(result.success).toBe(false)
       expect(result.deliveredCount).toBe(0)
     })
+
+    it("durable DB idempotency: duplicate notification with same dedupKey is stopped by DB unique constraint", async () => {
+      vi.mocked(prisma.userSettings.findUnique).mockResolvedValueOnce({
+        userId: "user-alice",
+        pushNotifications: true,
+      } as any)
+
+      // Simulate Prisma P2002 unique constraint violation on Notification dedupKey
+      vi.mocked(prisma.notification.create).mockRejectedValueOnce({
+        code: "P2002",
+        message: "Unique constraint failed on the fields: (`dedupKey`)",
+      })
+
+      const result = await sendNotification({
+        userId: "user-alice",
+        type: "PAYMENT_SUCCESS",
+        title: "Payment Successful",
+        body: "Payment confirmed",
+        dedupKey: "db-dedup-test-key-1",
+      })
+
+      expect(result.success).toBe(true)
+      expect(result.deliveredCount).toBe(0)
+      expect(result.reason).toBe("Deduplicated (DB)")
+      expect(webpush.sendNotification).not.toHaveBeenCalled()
+    })
   })
 
   describe("4. In-App Notification Center Access & Scoping", () => {

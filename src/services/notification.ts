@@ -104,7 +104,8 @@ export async function sendNotification(
       }
     }
 
-    // 3. Persist in-app Notification record
+    // 3. Persist in-app Notification record with durable DB-level idempotency
+    // Across serverless lambdas / multiple instances, database uniqueness is authoritative.
     if (prisma.notification) {
       try {
         await prisma.notification.create({
@@ -114,10 +115,15 @@ export async function sendNotification(
             title,
             body,
             url: safeUrl,
+            dedupKey: finalDedupKey,
             metadata: data ? JSON.stringify(data) : null,
           },
         })
-      } catch (err) {
+      } catch (err: any) {
+        // If unique constraint on dedupKey is triggered, this event was already processed by another serverless instance
+        if (err?.code === "P2002" || String(err?.message || "").includes("dedupKey")) {
+          return { success: true, deliveredCount: 0, reason: "Deduplicated (DB)" }
+        }
         console.error("[NotificationService] In-app notification creation error:", err)
       }
     }
