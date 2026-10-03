@@ -8,7 +8,7 @@ import { redirect } from "next/navigation"
 import { getUserBalances } from "@/services/balance"
 import { checkActionRateLimit } from "@/lib/rateLimit"
 import { logSecurityEvent } from "@/lib/securityAudit"
-import { validateId } from "@/lib/security"
+import { validateId, validateIntegerPaise } from "@/lib/security"
 
 const recordSettlementSchema = z.object({
   receiverId: z.string().min(1, "Receiver is required"),
@@ -56,14 +56,20 @@ export async function recordSettlement(formData: FormData) {
     throw new Error("Too many settlement attempts. Please wait a minute before trying again.")
   }
 
-  // Block client-side tampering: reject any client attempting to submit verification or provider status
+  // Block client-side tampering: reject any client attempting to submit verification, provider, or cashback status
   if (
     formData.has("status") ||
     formData.has("paymentStatus") ||
     formData.has("verificationMethod") ||
     formData.has("providerTransactionId") ||
     formData.has("verifiedAt") ||
-    formData.has("verifiedAmount")
+    formData.has("verifiedAmount") ||
+    formData.has("cashback") ||
+    formData.has("cashbackAmount") ||
+    formData.has("cashbackBalance") ||
+    formData.has("reward") ||
+    formData.has("role") ||
+    formData.has("isAdmin")
   ) {
     await logSecurityEvent({
       type: "MALICIOUS_INPUT_BLOCKED",
@@ -78,9 +84,12 @@ export async function recordSettlement(formData: FormData) {
   const rawGroupId = formData.get("groupId")
   const rawIdempotencyKey = formData.get("idempotencyKey")
 
+  // Strict integer paise validation (rejects floats, NaN, negative, non-digits, overflow)
+  const validatedAmountPaise = validateIntegerPaise(rawAmountPaise, "amountPaise")
+
   const parsed = recordSettlementSchema.safeParse({
     receiverId: rawReceiverId,
-    amountPaise: rawAmountPaise ? parseInt(String(rawAmountPaise), 10) : NaN,
+    amountPaise: validatedAmountPaise,
     groupId: rawGroupId ? String(rawGroupId) : null,
     idempotencyKey: rawIdempotencyKey ? String(rawIdempotencyKey) : null,
   })

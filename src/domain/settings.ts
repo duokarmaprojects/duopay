@@ -24,6 +24,6 @@ export const updateSettingsSchema = z.object({
   discoverableByPhone: z.boolean().optional(),
   shareActivityInGroup: z.boolean().optional(),
   showUpiOnProfile: z.boolean().optional(),
-})
+}).strict()
 
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>

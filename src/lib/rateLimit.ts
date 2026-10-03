@@ -23,6 +23,8 @@ export const RATE_LIMIT_CONFIGS = {
   AVATAR_UPLOAD: { maxAttempts: 5, windowMs: 5 * 60 * 1000 },
   // Group Join: 10 per 15 mins
   GROUP_JOIN: { maxAttempts: 10, windowMs: 15 * 60 * 1000 },
+  // Cashback Redemption: 5 per 15 mins
+  CASHBACK_REDEMPTION: { maxAttempts: 5, windowMs: 15 * 60 * 1000 },
 } as const
 
 const bucketMap = new Map<string, number[]>()

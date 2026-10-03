@@ -135,3 +135,136 @@ export function isAllowedSettlementTransition(fromStatus: string, toStatus: stri
   const allowed = transitions[fromStatus] || []
   return allowed.includes(toStatus)
 }
+
+/**
+ * Maximum financial transaction cap: ₹10,000,000 (100 million paise)
+ */
+export const MAX_FINANCIAL_PAISE = 1_000_000_000 // ₹10,000,000 in paise
+export const MAX_FINANCIAL_INR = 10_000_000
+
+/**
+ * Validates integer paise amounts strictly according to Zero-Trust rules.
+ * Rejects floats, scientific notation, strings with non-digits, negative, NaN, Infinity, and overflow.
+ */
+export function validateIntegerPaise(
+  raw: unknown,
+  fieldName = "amountPaise",
+  maxPaise: number = MAX_FINANCIAL_PAISE
+): number {
+  if (raw === undefined || raw === null || raw === "") {
+    throw new Error(`${fieldName} is required`)
+  }
+
+  let num: number
+
+  if (typeof raw === "number") {
+    if (!Number.isFinite(raw) || Number.isNaN(raw)) {
+      throw new Error(`${fieldName} must be a valid finite number`)
+    }
+    if (!Number.isInteger(raw)) {
+      throw new Error(`${fieldName} must be an integer minor unit (paise), decimal floats rejected`)
+    }
+    num = raw
+  } else if (typeof raw === "string") {
+    const trimmed = raw.trim()
+    if (!trimmed) {
+      throw new Error(`${fieldName} is required`)
+    }
+    // Reject decimals explicitly
+    if (trimmed.includes(".")) {
+      throw new Error(`${fieldName} must be an integer minor unit (paise), decimal floats rejected`)
+    }
+    // Reject negative or zero
+    if (trimmed.startsWith("-") || trimmed === "0") {
+      throw new Error("Settlement amount must be positive")
+    }
+    // Strict digit validation
+    if (!/^\d+$/.test(trimmed)) {
+      throw new Error(`${fieldName} must contain strictly numeric digits`)
+    }
+    num = Number(trimmed)
+  } else {
+    throw new Error(`${fieldName} must be a number or numeric string`)
+  }
+
+  if (!Number.isSafeInteger(num)) {
+    throw new Error(`${fieldName} exceeds safe integer calculation range`)
+  }
+
+  if (num <= 0) {
+    throw new Error("Settlement amount must be positive")
+  }
+
+  if (num > maxPaise) {
+    throw new Error(`${fieldName} exceeds maximum permitted limit`)
+  }
+
+  return num
+}
+
+/**
+ * Validates INR currency input (e.g. from user input in expense forms).
+ * Enforces safe finite number with at most 2 decimal places.
+ */
+export function validateInrAmount(
+  raw: unknown,
+  fieldName = "amount",
+  maxInr: number = MAX_FINANCIAL_INR
+): { inr: number; paise: number } {
+  if (raw === undefined || raw === null || raw === "") {
+    throw new Error(`${fieldName} is required`)
+  }
+
+  let inr: number
+
+  if (typeof raw === "number") {
+    if (!Number.isFinite(raw) || Number.isNaN(raw)) {
+      throw new Error(`${fieldName} must be a valid finite number`)
+    }
+    inr = raw
+  } else if (typeof raw === "string") {
+    const trimmed = raw.trim()
+    if (!trimmed) {
+      throw new Error(`${fieldName} is required`)
+    }
+    // Max 2 decimal digits format
+    if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) {
+      throw new Error(`${fieldName} must be a valid positive currency value with at most 2 decimal places`)
+    }
+    inr = Number(trimmed)
+  } else {
+    throw new Error(`${fieldName} must be a number or numeric string`)
+  }
+
+  if (!Number.isFinite(inr) || Number.isNaN(inr) || inr <= 0) {
+    throw new Error("Amount must be positive")
+  }
+
+  if (inr > maxInr) {
+    throw new Error("Amount exceeds limit")
+  }
+
+  const paise = Math.round(inr * 100)
+  if (!Number.isSafeInteger(paise) || paise <= 0) {
+    throw new Error(`${fieldName} resulted in invalid integer paise calculation`)
+  }
+
+  return { inr, paise }
+}
+
+/**
+ * Asserts that a FormData or request body does not contain forbidden financial/verification parameters.
+ */
+export function assertNoForbiddenFields(
+  formData: FormData,
+  forbiddenKeys: string[],
+  actionName: string,
+  userId?: string
+): void {
+  for (const key of forbiddenKeys) {
+    if (formData.has(key)) {
+      throw new Error("Client submission of payment verification state is strictly prohibited")
+    }
+  }
+}
+

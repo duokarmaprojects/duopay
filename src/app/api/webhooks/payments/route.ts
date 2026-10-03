@@ -3,6 +3,7 @@ import crypto from "crypto"
 import { prisma } from "@/lib/db"
 import { logSecurityEvent } from "@/lib/securityAudit"
 import { isAllowedSettlementTransition } from "@/lib/security"
+import { calculateCashback, formatPaise } from "@/domain/cashback"
 
 /**
  * DuoPay Official Payment Gateway Webhook Receiver
@@ -184,10 +185,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Amount mismatch" }, { status: 400 })
     }
 
-    // Idempotency: duplicate webhooks for already provider-verified record
+    // Idempotency: duplicate success webhooks for already provider-verified record
     if (
-      settlement.paymentStatus === "WEBHOOK_VERIFIED" ||
-      settlement.paymentStatus === "PROVIDER_VERIFIED"
+      isSuccessEvent &&
+      (settlement.paymentStatus === "WEBHOOK_VERIFIED" ||
+        settlement.paymentStatus === "PROVIDER_VERIFIED")
     ) {
       return NextResponse.json({
         received: true,
@@ -201,6 +203,8 @@ export async function POST(req: NextRequest) {
       if (!isAllowedSettlementTransition(settlement.status, "SETTLED")) {
         return NextResponse.json({ error: "Invalid settlement state transition" }, { status: 409 })
       }
+
+      let awardedCashbackPaise = 0
 
       try {
         await prisma.$transaction(async (tx) => {
@@ -219,9 +223,99 @@ export async function POST(req: NextRequest) {
               settledAt: settlement.settledAt || new Date(),
             },
           })
+
+          // Idempotent Cashback Allocation: exactly one cashback per qualifying verified payment
+          const cashbackIdempotencyKey = `cashback:settle:${settlementId}`
+          const existingCashback = await tx.cashbackLedger.findUnique({
+            where: { idempotencyKey: cashbackIdempotencyKey },
+          })
+
+          if (!existingCashback && settlement.payerId) {
+            const verifiedAmt = amountInPaise || settlement.amount
+            awardedCashbackPaise = calculateCashback(verifiedAmt)
+
+            if (awardedCashbackPaise > 0) {
+              await tx.cashbackLedger.create({
+                data: {
+                  userId: settlement.payerId,
+                  amountPaise: awardedCashbackPaise,
+                  type: "PAYMENT_CASHBACK",
+                  status: "EARNED",
+                  sourcePaymentId: settlement.id,
+                  providerTransactionId: transactionId,
+                  idempotencyKey: cashbackIdempotencyKey,
+                  description: `Instant cashback for payment of ${formatPaise(verifiedAmt)}`,
+                },
+              })
+
+              await tx.user.update({
+                where: { id: settlement.payerId },
+                data: {
+                  cashbackBalancePaise: { increment: awardedCashbackPaise },
+                },
+              })
+            }
+          }
+
+          // Track qualifying referral payments towards 10-payment milestone
+          if (settlement.payerId && (tx as any).referral?.findUnique) {
+            const referral = await (tx as any).referral.findUnique({
+              where: { refereeId: settlement.payerId },
+            })
+
+            if (
+              referral &&
+              referral.status !== "FRAUD_FLAGGED" &&
+              referral.completionRewardStatus === "PENDING"
+            ) {
+              const newCount = referral.qualifyingPaymentCount + 1
+              const reachedMilestone = newCount >= 10
+
+              await tx.referral.update({
+                where: { id: referral.id },
+                data: {
+                  qualifyingPaymentCount: newCount,
+                  status: reachedMilestone ? "COMPLETED" : "ACTIVE",
+                  completionRewardStatus: reachedMilestone ? "EARNED" : "PENDING",
+                  completedAt: reachedMilestone ? new Date() : null,
+                },
+              })
+
+              if (reachedMilestone) {
+                const milestoneKey = `ref_milestone:${referral.id}`
+                const existingMilestone = await tx.cashbackLedger.findUnique({
+                  where: { idempotencyKey: milestoneKey },
+                })
+
+                if (!existingMilestone) {
+                  await tx.cashbackLedger.create({
+                    data: {
+                      userId: referral.referrerId,
+                      amountPaise: 1000,
+                      type: "REFERRAL_MILESTONE",
+                      status: "EARNED",
+                      idempotencyKey: milestoneKey,
+                      description: "Referral milestone bonus: friend completed 10 verified payments (₹10)",
+                    },
+                  })
+
+                  await tx.user.update({
+                    where: { id: referral.referrerId },
+                    data: {
+                      cashbackBalancePaise: { increment: 1000 },
+                    },
+                  })
+                }
+              }
+            }
+          }
         })
       } catch (dbErr: any) {
-        if (dbErr?.code === "P2002" || String(dbErr?.message || "").includes("processedEventId")) {
+        if (
+          dbErr?.code === "P2002" ||
+          String(dbErr?.message || "").includes("processedEventId") ||
+          String(dbErr?.message || "").includes("idempotencyKey")
+        ) {
           return NextResponse.json({
             received: true,
             idempotent: true,
@@ -241,14 +335,64 @@ export async function POST(req: NextRequest) {
           amountPaise: settlement.amount,
           verificationMethod: "WEBHOOK_HMAC",
           providerTransactionId: transactionId,
+          cashbackAwardedPaise: awardedCashbackPaise,
         },
       })
+
+      return NextResponse.json({
+        received: true,
+        success: true,
+        paymentStatus: "WEBHOOK_VERIFIED",
+        cashbackAwardedPaise: awardedCashbackPaise,
+      })
+    } else if (
+      eventType.includes("refund") ||
+      eventType.includes("reversed") ||
+      eventType === "payment.refunded"
+    ) {
+      // Reversal: If cashback was awarded for this settlement, create a REVERSAL ledger entry
+      await prisma.$transaction(async (tx) => {
+        const originalCashback = await tx.cashbackLedger.findFirst({
+          where: {
+            sourcePaymentId: settlement.id,
+            type: "PAYMENT_CASHBACK",
+            status: "EARNED",
+          },
+        })
+        if (originalCashback) {
+          const reversalKey = `reversal:cashback:${originalCashback.id}`
+          const existingReversal = await tx.cashbackLedger.findUnique({
+            where: { idempotencyKey: reversalKey },
+          })
+          if (!existingReversal) {
+            await tx.cashbackLedger.create({
+              data: {
+                userId: originalCashback.userId,
+                amountPaise: -originalCashback.amountPaise,
+                type: "REVERSAL",
+                status: "REVERSED",
+                sourcePaymentId: settlement.id,
+                providerTransactionId: transactionId,
+                idempotencyKey: reversalKey,
+                description: `Cashback reversed due to payment refund/reversal`,
+              },
+            })
+            await tx.user.update({
+              where: { id: originalCashback.userId },
+              data: {
+                cashbackBalancePaise: { decrement: originalCashback.amountPaise },
+              },
+            })
+          }
+        }
+      })
+      return NextResponse.json({ received: true, success: false, status: "REVERSED" })
     }
 
     return NextResponse.json({
       received: true,
-      success: true,
-      paymentStatus: "WEBHOOK_VERIFIED",
+      success: false,
+      status: "IGNORED",
     })
   } catch (error: any) {
     console.error("[WEBHOOK ERROR] Internal processing failure:", error)

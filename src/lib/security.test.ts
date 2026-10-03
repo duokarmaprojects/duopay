@@ -74,6 +74,12 @@ vi.mock("@/lib/db", () => ({
       count: vi.fn().mockResolvedValue(0),
       deleteMany: vi.fn(),
     },
+    cashbackLedger: {
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+    },
     expense: {
       findUnique: vi.fn(),
       findMany: vi.fn(),

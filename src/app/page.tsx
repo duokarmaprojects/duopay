@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Plus, Users, Activity, User as UserIcon } from "lucide-react"
 import { prisma } from "@/lib/db"
 import { getUserBalances } from "@/services/balance"
+import { getCashbackSummary } from "@/actions/cashback"
 
 import DashboardView from "./components/DashboardView"
 
@@ -25,7 +26,10 @@ export default async function HomePage() {
     redirect('/setup-profile')
   }
 
-  const { totalOwedToUser, totalUserOwes, detailedBalances } = await getUserBalances(session.user.id)
+  const [{ totalOwedToUser, totalUserOwes, detailedBalances }, cashbackSummary] = await Promise.all([
+    getUserBalances(session.user.id),
+    getCashbackSummary(),
+  ])
 
   return (
     <DashboardView 
@@ -34,6 +38,7 @@ export default async function HomePage() {
       totalUserOwes={totalUserOwes}
       totalOwedToUser={totalOwedToUser}
       detailedBalances={detailedBalances as any}
+      cashbackSummary={cashbackSummary}
     />
   )
 }

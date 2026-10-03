@@ -17,7 +17,7 @@ const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(50, "Name is too long").optional(),
   phone: z.string().min(6, "Phone number is too short").max(20, "Phone number is too long"),
   upiId: z.string().min(5, "UPI ID is too short").max(70, "UPI ID is too long"),
-})
+}).strict()
 
 export async function completeProfile(formData: FormData) {
   const session = await auth()
@@ -27,6 +27,23 @@ export async function completeProfile(formData: FormData) {
       details: { action: "completeProfile" },
     })
     throw new Error("Not authenticated")
+  }
+
+  // Reject privileged role or verification injection attempts
+  if (
+    formData.has("role") ||
+    formData.has("isAdmin") ||
+    formData.has("upiVerified") ||
+    formData.has("upiVerificationReference") ||
+    formData.has("cashbackBalancePaise") ||
+    formData.has("cashback")
+  ) {
+    await logSecurityEvent({
+      type: "MALICIOUS_INPUT_BLOCKED",
+      userId: session.user.id,
+      details: { action: "completeProfile_forbidden_field_injected" },
+    })
+    throw new Error("Client submission of privileged user or verification state is strictly prohibited")
   }
 
   const rawName = (formData.get("name") as string | null)?.trim()

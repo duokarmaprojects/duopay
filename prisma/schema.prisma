@@ -36,6 +36,17 @@ model User {
   
   analyticsEvents     AnalyticsEvent[]
   settings            UserSettings?
+
+  cashbackBalancePaise Int             @default(0)
+  cashbackLedgers      CashbackLedger[]
+  redemptions          RedemptionRequest[]
+
+  referralCode         String?             @unique
+  referredById         String?
+  referredBy           User?               @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referredUsers        User[]              @relation("UserReferrals")
+  referralsSent        Referral[]          @relation("ReferralsSent")
+  referralReceived     Referral?           @relation("ReferralReceived")
 }
 
 // NextAuth standard models
@@ -146,6 +157,7 @@ model Settlement {
   group                 Group?    @relation(fields: [groupId], references: [id], onDelete: Restrict)
   payer                 User      @relation("SettlementsPaid", fields: [payerId], references: [id], onDelete: Restrict)
   receiver              User      @relation("SettlementsReceived", fields: [receiverId], references: [id], onDelete: Restrict)
+  cashbackLedgers       CashbackLedger[]
 
   @@index([providerTransactionId])
   @@index([paymentStatus])
@@ -226,4 +238,68 @@ model UserSettings {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }
+
+model CashbackLedger {
+  id                    String      @id @default(cuid())
+  userId                String
+  amountPaise           Int         // Positive for credit (EARNED, ADJUSTMENT), negative for debit (REDEEMED, REVERSAL)
+  type                  String      // PAYMENT_CASHBACK, REDEMPTION, REVERSAL, ADJUSTMENT
+  status                String      // EARNED, REDEEMED, REVERSED, PENDING, CANCELLED
+  sourcePaymentId       String?
+  providerTransactionId String?
+  idempotencyKey        String?     @unique
+  description           String?
+  metadata              String?     // JSON string
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  settlement            Settlement? @relation(fields: [sourcePaymentId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([sourcePaymentId])
+  @@index([providerTransactionId])
+}
+
+model RedemptionRequest {
+  id                String    @id @default(cuid())
+  userId            String
+  amountPaise       Int
+  status            String    @default("REQUESTED") // REQUESTED, PROCESSING, COMPLETED, FAILED, REVERSED
+  payoutDestination String    // Verified UPI ID
+  payoutReference   String?
+  failureReason     String?
+  idempotencyKey    String?   @unique
+  ledgerEntryId     String?   @unique
+  requestedAt       DateTime  @default(now())
+  processedAt       DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, requestedAt])
+}
+
+model Referral {
+  id                        String    @id @default(cuid())
+  referrerId                String
+  refereeId                 String    @unique
+  status                    String    @default("JOINED") // JOINED, ACTIVE, COMPLETED, FRAUD_FLAGGED
+  signupRewardPaidPaise     Int       @default(1100) // ₹11 = 1100 paise
+  signupRewardStatus        String    @default("EARNED") // EARNED, PENDING, REVERSED
+  qualifyingPaymentCount    Int       @default(0) // Out of 10 qualifying payments
+  completionRewardPaidPaise Int       @default(1000) // ₹10 = 1000 paise
+  completionRewardStatus    String    @default("PENDING") // PENDING, EARNED, REVERSED
+  completedAt               DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  referrer                  User      @relation("ReferralsSent", fields: [referrerId], references: [id], onDelete: Cascade)
+  referee                   User      @relation("ReferralReceived", fields: [refereeId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId, createdAt])
+}
+
 

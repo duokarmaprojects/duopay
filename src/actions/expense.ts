@@ -14,7 +14,7 @@ import {
 } from "@/domain/money"
 import { checkActionRateLimit } from "@/lib/rateLimit"
 import { logSecurityEvent } from "@/lib/securityAudit"
-import { sanitizeTextInput, validateId } from "@/lib/security"
+import { sanitizeTextInput, validateId, validateInrAmount } from "@/lib/security"
 
 const addExpenseSchema = z.object({
   groupId: z.string().min(1, "Group ID is required"),
@@ -50,23 +50,66 @@ export async function addExpense(formData: FormData) {
     throw new Error("Too many expenses added recently. Please wait a moment.")
   }
 
-  const groupId = formData.get("groupId") as string
+  // Zero-Trust Hardening: Reject forbidden verification, financial, or auth parameters in expense submission
+  const FORBIDDEN_EXPENSE_FIELDS = [
+    "status",
+    "paymentStatus",
+    "verificationMethod",
+    "verifiedAmount",
+    "verifiedAt",
+    "providerTransactionId",
+    "cashback",
+    "cashbackAmount",
+    "reward",
+    "rewardAmount",
+    "role",
+    "isAdmin",
+  ]
+  for (const field of FORBIDDEN_EXPENSE_FIELDS) {
+    if (formData.has(field)) {
+      await logSecurityEvent({
+        type: "MALICIOUS_INPUT_BLOCKED",
+        userId,
+        details: { action: "addExpense_forbidden_field", field },
+      })
+      throw new Error("Client submission of payment verification state is strictly prohibited")
+    }
+  }
+
+  const rawGroupId = formData.get("groupId") as string
   const rawDescription = formData.get("description") as string
-  const amountInr = parseFloat(formData.get("amount") as string)
-  const payerId = formData.get("payerId") as string
+  const rawAmount = formData.get("amount")
+  const rawPayerId = (formData.get("payerId") as string) || userId
   const participantIds = formData.getAll("participants") as string[]
   const splitMethod = (formData.get("splitMethod") as string || "EQUAL") as "EQUAL" | "PERCENTAGE" | "EXACT" | "SHARES"
   const splitDataStr = formData.get("splitData") as string || "{}"
   const rawCategory = formData.get("category") as string || "OTHER"
 
+  // Payer authorization: user cannot record an expense on behalf of another user as payer
+  if (rawPayerId !== userId) {
+    await logSecurityEvent({
+      type: "IDOR_ATTEMPT_BLOCKED",
+      userId,
+      details: {
+        action: "addExpense_payer_mismatch",
+        claimedPayerId: rawPayerId,
+        groupId: rawGroupId,
+      },
+    })
+    throw new Error("Unauthorized: You cannot create an expense on behalf of another user")
+  }
+
+  // Strict INR validation (at most 2 decimals, positive, safe bounds)
+  const { inr: amountInr, paise: amountPaise } = validateInrAmount(rawAmount, "amount", 10000000)
+
   const description = sanitizeTextInput(rawDescription, 100)
   const category = sanitizeTextInput(rawCategory, 30)
 
   const parsed = addExpenseSchema.safeParse({
-    groupId,
+    groupId: rawGroupId,
     description,
     amount: amountInr,
-    payerId,
+    payerId: rawPayerId,
     participantIds,
     splitMethod,
     splitData: splitDataStr,
@@ -88,8 +131,6 @@ export async function addExpense(formData: FormData) {
   for (const pid of data.participantIds) {
     validateId(pid, "participantId")
   }
-
-  const amountPaise = inrToPaise(data.amount)
 
   // Validate group access: session user MUST be a member
   const groupMembers = await prisma.groupMember.findMany({

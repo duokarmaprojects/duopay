@@ -49,7 +49,8 @@ export async function updateUserSettings(input: UpdateSettingsInput) {
 
   const userId = session.user.id
 
-  const parsed = updateSettingsSchema.safeParse(input)
+  const { userId: _claimedUserId, ...safeInput } = (input as any) || {}
+  const parsed = updateSettingsSchema.safeParse(safeInput)
   if (!parsed.success) {
     await logSecurityEvent({
       type: "MALICIOUS_INPUT_BLOCKED",
