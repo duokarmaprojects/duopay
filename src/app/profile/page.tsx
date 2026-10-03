@@ -13,8 +13,6 @@ import AppearanceSettings from "./AppearanceSettings"
 import UpiModal, { UpiDetailsCard } from "./UpiModal"
 import ProfileSections from "./ProfileSections"
 import { getUserSettings } from "@/actions/settings"
-import { getCashbackSummary } from "@/actions/cashback"
-import CashbackCard from "@/components/rewards/CashbackCard"
 import BottomNav from "@/components/navigation/BottomNav"
 
 export default async function ProfilePage() {
@@ -30,7 +28,6 @@ export default async function ProfilePage() {
     expenseCount,
     settlementCount,
     userSettings,
-    cashbackSummary,
   ] = await Promise.all([
     getUserBalances(session.user.id),
     prisma.groupMember.count({ where: { userId: session.user.id } }),
@@ -51,7 +48,6 @@ export default async function ProfilePage() {
       } 
     }),
     getUserSettings(),
-    getCashbackSummary(),
   ])
 
   const SectionTitle = ({ children }: { children: React.ReactNode }) => (
@@ -78,12 +74,7 @@ export default async function ProfilePage() {
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        {/* 2. DuoPay Cashback & Rewards */}
-        <div className="px-6 mt-6">
-          <CashbackCard summary={cashbackSummary} />
-        </div>
-
-        {/* 3. DuoPay Overview */}
+        {/* 2. DuoPay Overview */}
         <SectionTitle>Your DuoPay</SectionTitle>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mx-6 flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-gray-50">
