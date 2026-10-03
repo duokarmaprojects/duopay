@@ -56,19 +56,21 @@ export function LoginForm({ loginAction }: LoginFormProps) {
   return (
     <div className="w-full max-w-[360px] mx-auto flex flex-col justify-center my-auto px-1 py-4">
       {/* 1. BRANDING */}
-      <div className="flex flex-col items-center text-center mb-7">
-        <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-lg shadow-black/60 border border-zinc-800/80 bg-zinc-950 flex items-center justify-center mb-3">
+      <div className="flex flex-col items-center text-center mb-8">
+        <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-[22px] sm:rounded-3xl overflow-hidden shadow-2xl shadow-black/80 border border-zinc-800 bg-zinc-950 flex items-center justify-center mb-4 ring-1 ring-white/10">
           <Image
             src="/icon-192x192.png"
             alt="DuoPay Logo"
-            width={56}
-            height={56}
+            width={96}
+            height={96}
             className="w-full h-full object-cover"
             priority
           />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">DuoPay</h1>
-        <p className="text-xs font-medium text-zinc-400 tracking-wide mt-1">
+        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+          DuoPay
+        </h1>
+        <p className="text-sm font-medium text-zinc-400 tracking-wide mt-1.5">
           Split. Settle. Done.
         </p>
       </div>
