@@ -43,6 +43,8 @@ model User {
   referredUsers        User[]              @relation("UserReferrals")
   referralsSent        Referral[]          @relation("ReferralsSent")
   referralReceived     Referral?           @relation("ReferralReceived")
+  pushSubscriptions    PushSubscription[]
+  notifications        Notification[]
 }
 
 // NextAuth standard models
@@ -202,6 +204,9 @@ model UserSettings {
   expenseAlerts        Boolean  @default(true)
   paymentReminders     Boolean  @default(true)
   groupActivityAlerts  Boolean  @default(true)
+  cashbackAlerts       Boolean  @default(true)
+  referralAlerts       Boolean  @default(true)
+  recurringReminders   Boolean  @default(true)
   pushNotifications    Boolean  @default(false)
 
   // Privacy & Visibility
@@ -274,6 +279,42 @@ model Referral {
   referee                   User      @relation("ReferralReceived", fields: [refereeId], references: [id], onDelete: Cascade)
 
   @@index([referrerId, createdAt])
+}
+
+model PushSubscription {
+  id          String   @id @default(cuid())
+  userId      String
+  endpoint    String   @unique
+  p256dh      String
+  auth        String
+  userAgent   String?
+  platform    String?  // android, ios, desktop, unknown
+  isActive    Boolean  @default(true)
+  lastUsedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
+  @@index([endpoint])
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  type        String    // EXPENSE_ADDED, PAYMENT_RECEIVED, CASHBACK_EARNED, etc.
+  title       String
+  body        String
+  url         String?   // Same-origin relative path only
+  metadata    String?   // JSON string
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
 }
 
 

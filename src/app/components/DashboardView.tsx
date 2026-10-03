@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Eye, EyeOff, Users, Plus, Activity, User as UserIcon } from "lucide-react"
+import { Eye, EyeOff, Users, Plus, Activity, User as UserIcon, Bell } from "lucide-react"
 import BalanceCards from "./BalanceCards"
 import { GroupIcon } from "@/components/ui/GroupIcon"
 import CashbackCard from "@/components/rewards/CashbackCard"
@@ -16,6 +16,7 @@ type DashboardViewProps = {
   totalOwedToUser: number
   detailedBalances: any[]
   cashbackSummary?: any
+  unreadNotificationCount?: number
 }
 
 export default function DashboardView({
@@ -25,6 +26,7 @@ export default function DashboardView({
   totalOwedToUser,
   detailedBalances,
   cashbackSummary,
+  unreadNotificationCount = 0,
 }: DashboardViewProps) {
   const [privacyMode, setPrivacyMode] = useState(true)
 
@@ -51,8 +53,23 @@ export default function DashboardView({
             )}
           </div>
           
-          {/* Right: Refer & Earn Action + Profile/Avatar Link */}
+          {/* Right: Notifications + Refer & Earn Action + Profile/Avatar Link */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Notification Bell with Unread Badge */}
+            <Link
+              href="/notifications"
+              className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black dark:focus-visible:ring-white shrink-0"
+              aria-label="Notifications"
+              title="Notifications"
+            >
+              <Bell size={18} />
+              {unreadNotificationCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-900 shadow-xs">
+                  {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
+                </span>
+              )}
+            </Link>
+
             <ReferralHeaderButton />
 
             <Link

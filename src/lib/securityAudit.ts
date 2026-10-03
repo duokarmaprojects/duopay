@@ -25,6 +25,7 @@ export type SecurityEventType =
   | "GROUP_DELETED"
   | "RATE_LIMIT_TRIGGERED"
   | "MALICIOUS_INPUT_BLOCKED"
+  | "PUSH_SUBSCRIPTION_CHANGED"
 
 export interface SecurityEventData {
   type: SecurityEventType

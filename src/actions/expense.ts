@@ -15,6 +15,7 @@ import {
 import { checkActionRateLimit } from "@/lib/rateLimit"
 import { logSecurityEvent } from "@/lib/securityAudit"
 import { sanitizeTextInput, validateId, validateInrAmount } from "@/lib/security"
+import { sendNotification } from "@/services/notification"
 
 const addExpenseSchema = z.object({
   groupId: z.string().min(1, "Group ID is required"),
@@ -262,6 +263,27 @@ export async function addExpense(formData: FormData) {
       participantCount: data.participantIds.length,
     },
   })
+
+  // Asynchronously notify participants (excluding payer)
+  const payerUser = await prisma.user.findUnique({
+    where: { id: data.payerId },
+    select: { name: true },
+  })
+  const payerName = payerUser?.name || "Someone"
+
+  for (const pid of data.participantIds) {
+    if (pid !== data.payerId) {
+      const shareRupees = (shares[pid] / 100).toFixed(2)
+      sendNotification({
+        userId: pid,
+        type: "EXPENSE_ADDED",
+        title: `${payerName} added an expense`,
+        body: `${data.description} — Your share is ₹${shareRupees}`,
+        url: `/groups/${data.groupId}`,
+        data: { groupId: data.groupId, amountPaise: shares[pid] },
+      }).catch(() => {})
+    }
+  }
 
   revalidatePath(`/groups/${data.groupId}`)
   revalidatePath('/')

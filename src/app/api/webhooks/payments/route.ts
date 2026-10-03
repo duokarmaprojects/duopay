@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db"
 import { logSecurityEvent } from "@/lib/securityAudit"
 import { isAllowedSettlementTransition } from "@/lib/security"
 import { calculateCashback, formatPaise } from "@/domain/cashback"
+import { sendNotification } from "@/services/notification"
 
 /**
  * DuoPay Official Payment Gateway Webhook Receiver
@@ -338,6 +339,52 @@ export async function POST(req: NextRequest) {
           cashbackAwardedPaise: awardedCashbackPaise,
         },
       })
+
+      // Dispatch trusted post-commit push notifications
+      const [payer, receiver] = await Promise.all([
+        prisma.user.findUnique({ where: { id: settlement.payerId }, select: { name: true } }),
+        prisma.user.findUnique({ where: { id: settlement.receiverId }, select: { name: true } }),
+      ])
+
+      const payerName = payer?.name || "Friend"
+      const receiverName = receiver?.name || "Friend"
+      const verifiedRupees = ((amountInPaise || settlement.amount) / 100).toFixed(2)
+
+      // 1. Notify receiver: payment verified
+      sendNotification({
+        userId: settlement.receiverId,
+        type: "PAYMENT_RECEIVED",
+        title: "Payment Received",
+        body: `${payerName} paid you ₹${verifiedRupees} via ${provider}.`,
+        url: settlement.groupId ? `/groups/${settlement.groupId}` : "/",
+        data: { settlementId, amountPaise: amountInPaise || settlement.amount },
+        dedupKey: `push:settle:${settlementId}:received`,
+      }).catch(() => {})
+
+      // 2. Notify payer: payment successful
+      sendNotification({
+        userId: settlement.payerId,
+        type: "PAYMENT_SUCCESS",
+        title: "Payment Successful",
+        body: `Your payment of ₹${verifiedRupees} to ${receiverName} is confirmed.`,
+        url: settlement.groupId ? `/groups/${settlement.groupId}` : "/",
+        data: { settlementId, amountPaise: amountInPaise || settlement.amount },
+        dedupKey: `push:settle:${settlementId}:success`,
+      }).catch(() => {})
+
+      // 3. Notify payer of cashback if awarded
+      if (awardedCashbackPaise > 0) {
+        const cashbackRupees = (awardedCashbackPaise / 100).toFixed(2)
+        sendNotification({
+          userId: settlement.payerId,
+          type: "CASHBACK_EARNED",
+          title: "Cashback Earned! 🎉",
+          body: `You received ₹${cashbackRupees} instant cashback on your payment.`,
+          url: "/rewards",
+          data: { amountPaise: awardedCashbackPaise, settlementId },
+          dedupKey: `push:cashback:settle:${settlementId}`,
+        }).catch(() => {})
+      }
 
       return NextResponse.json({
         received: true,

@@ -9,6 +9,7 @@ import { getUserBalances } from "@/services/balance"
 import { checkActionRateLimit } from "@/lib/rateLimit"
 import { logSecurityEvent } from "@/lib/securityAudit"
 import { validateId, validateIntegerPaise } from "@/lib/security"
+import { sendNotification } from "@/services/notification"
 
 const recordSettlementSchema = z.object({
   receiverId: z.string().min(1, "Receiver is required"),
@@ -249,6 +250,23 @@ export async function recordSettlement(formData: FormData) {
       paymentProvider: "manual_confirmation",
     },
   })
+
+  // Notify receiver (isolated so failure never breaks settlement)
+  const payer = await prisma.user.findUnique({
+    where: { id: payerId },
+    select: { name: true },
+  })
+  const payerDisplayName = payer?.name || "Friend"
+  const settledRupees = (amountPaise / 100).toFixed(2)
+
+  sendNotification({
+    userId: receiverId,
+    type: "SETTLEMENT_COMPLETED",
+    title: "Payment Received",
+    body: `${payerDisplayName} settled ₹${settledRupees} with you.`,
+    url: groupId ? `/groups/${groupId}` : "/",
+    data: { amountPaise, payerId, groupId },
+  }).catch(() => {})
 
   revalidatePath("/")
   if (groupId) {

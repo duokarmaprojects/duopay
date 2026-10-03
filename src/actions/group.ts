@@ -11,6 +11,7 @@ import { logSecurityEvent } from "@/lib/securityAudit"
 import { sanitizeTextInput, validateId } from "@/lib/security"
 import { getUserBalances } from "@/services/balance"
 import { generateGroupInviteToken, verifyGroupInviteToken } from "@/lib/invite"
+import { sendNotification } from "@/services/notification"
 
 const createGroupSchema = z.object({
   name: z.string().min(1, "Group name is required").max(50, "Group name is too long"),
@@ -300,6 +301,22 @@ export async function joinGroupWithInviteToken(groupId: string, token: string) {
     userId,
     details: { groupId, inviterId: verification.inviterId },
   })
+
+  // Notify inviter that new member joined
+  if (verification.inviterId && verification.inviterId !== userId) {
+    const [joiner, grp] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
+      prisma.group.findUnique({ where: { id: groupId }, select: { name: true } }),
+    ])
+    sendNotification({
+      userId: verification.inviterId,
+      type: "GROUP_MEMBER_JOINED",
+      title: "New Group Member",
+      body: `${joiner?.name || "A friend"} joined ${grp?.name || "your group"}.`,
+      url: `/groups/${groupId}`,
+      data: { groupId, joinerId: userId },
+    }).catch(() => {})
+  }
 
   revalidatePath(`/groups/${groupId}`)
   revalidatePath('/groups')

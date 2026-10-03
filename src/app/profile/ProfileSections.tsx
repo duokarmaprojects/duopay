@@ -3,9 +3,10 @@
 import { useState, useTransition, useEffect } from "react"
 import { 
   Settings, Bell, Lock, ChevronRight, Check, 
-  Sparkles, Smartphone, Shield, Eye, Users, RefreshCw
+  Sparkles, Smartphone, Shield, Eye, Users, RefreshCw, Gift
 } from "lucide-react"
 import { updateUserSettings, UpdateSettingsInput } from "@/actions/settings"
+import PushNotificationManager from "@/components/notifications/PushNotificationManager"
 
 export interface UserSettingsProps {
   initialSettings: {
@@ -15,6 +16,9 @@ export interface UserSettingsProps {
     expenseAlerts: boolean
     paymentReminders: boolean
     groupActivityAlerts: boolean
+    cashbackAlerts?: boolean
+    referralAlerts?: boolean
+    recurringReminders?: boolean
     pushNotifications: boolean
     discoverableByPhone: boolean
     shareActivityInGroup: boolean
@@ -263,52 +267,11 @@ export default function ProfileSections({ initialSettings }: UserSettingsProps) 
         >
           <div className="overflow-hidden">
             <div className="bg-gray-50/80 dark:bg-zinc-900/60 border-b border-gray-100 dark:border-zinc-800/80 p-4 flex flex-col gap-3.5">
-              {/* Browser Push Notifications */}
-              <div className="p-3 bg-white dark:bg-zinc-800/80 rounded-2xl border border-gray-200/80 dark:border-zinc-700 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Smartphone size={16} className="text-purple-600 dark:text-purple-400" />
-                    <span className="text-xs font-bold text-gray-900 dark:text-zinc-100">Push Notifications</span>
-                  </div>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
-                      pushStatus === "granted"
-                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                        : pushStatus === "denied"
-                        ? "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300"
-                        : "bg-gray-100 text-gray-700 dark:bg-zinc-700 dark:text-zinc-300"
-                    }`}
-                  >
-                    {pushStatus === "granted" ? "Enabled" : pushStatus === "denied" ? "Blocked" : "Not Set"}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">
-                  Receive instant alerts on this device when someone splits an expense or settles up with you.
-                </p>
-                {pushStatus !== "granted" ? (
-                  <button
-                    type="button"
-                    onClick={handleEnablePush}
-                    className="mt-1 py-2 px-3 bg-black dark:bg-white text-white dark:text-black rounded-xl text-xs font-bold active:scale-98 transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <Bell size={13} />
-                    <span>Enable Device Notifications</span>
-                  </button>
-                ) : (
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-xs text-gray-600 dark:text-zinc-300 font-medium">Send push alerts</span>
-                    <ToggleSwitch
-                      id="push-alerts-toggle"
-                      label="Send push alerts"
-                      checked={settings.pushNotifications}
-                      onChange={(val) => handleUpdate({ pushNotifications: val })}
-                    />
-                  </div>
-                )}
-              </div>
+              {/* Real Web Push Notification Manager (VAPID + PWA + iOS Support) */}
+              <PushNotificationManager initialEnabled={settings.pushNotifications} />
 
               {/* Expense Alerts */}
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center justify-between pt-2 border-t border-gray-200/60 dark:border-zinc-800">
                 <div className="pr-4">
                   <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Expense Alerts</p>
                   <p className="text-xs text-gray-500 dark:text-zinc-400">
@@ -352,6 +315,54 @@ export default function ProfileSections({ initialSettings }: UserSettingsProps) 
                   label="Group activity alerts"
                   checked={settings.groupActivityAlerts}
                   onChange={(val) => handleUpdate({ groupActivityAlerts: val })}
+                />
+              </div>
+
+              {/* Cashback Alerts */}
+              <div className="flex items-center justify-between pt-2 border-t border-gray-200/60 dark:border-zinc-800">
+                <div className="pr-4">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Cashback Rewards</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">
+                    Alerts when you earn instant cashback on verified payments
+                  </p>
+                </div>
+                <ToggleSwitch
+                  id="cashback-alerts-toggle"
+                  label="Cashback alerts"
+                  checked={settings.cashbackAlerts ?? true}
+                  onChange={(val) => handleUpdate({ cashbackAlerts: val })}
+                />
+              </div>
+
+              {/* Referral Alerts */}
+              <div className="flex items-center justify-between pt-2 border-t border-gray-200/60 dark:border-zinc-800">
+                <div className="pr-4">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Referral Rewards</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">
+                    Updates when invited friends sign up and unlock rewards
+                  </p>
+                </div>
+                <ToggleSwitch
+                  id="referral-alerts-toggle"
+                  label="Referral alerts"
+                  checked={settings.referralAlerts ?? true}
+                  onChange={(val) => handleUpdate({ referralAlerts: val })}
+                />
+              </div>
+
+              {/* Recurring Expenses Reminders */}
+              <div className="flex items-center justify-between pt-2 border-t border-gray-200/60 dark:border-zinc-800">
+                <div className="pr-4">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Recurring Reminders</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">
+                    Upcoming reminders for scheduled rent, utilities, and subscriptions
+                  </p>
+                </div>
+                <ToggleSwitch
+                  id="recurring-reminders-toggle"
+                  label="Recurring reminders"
+                  checked={settings.recurringReminders ?? true}
+                  onChange={(val) => handleUpdate({ recurringReminders: val })}
                 />
               </div>
             </div>

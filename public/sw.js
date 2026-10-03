@@ -1,7 +1,7 @@
 // DuoPay Production Service Worker
-// Version: 2026.10.2
+// Version: 2026.10.3
 
-const VERSION = '2026.10.2';
+const VERSION = '2026.10.3';
 const CACHE_STATIC_NAME = `duopay-static-v${VERSION}`;
 const CACHE_RUNTIME_NAME = `duopay-runtime-v${VERSION}`;
 const EXPECTED_CACHES = [CACHE_STATIC_NAME, CACHE_RUNTIME_NAME];
@@ -166,3 +166,90 @@ self.addEventListener('fetch', (event) => {
     );
   }
 });
+
+// ============================================================================
+// 7. Push Event Handler (Real Server-Initiated Web Push)
+// ============================================================================
+self.addEventListener('push', (event) => {
+  if (!event.data) {
+    return;
+  }
+
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch (err) {
+    // If not JSON, use raw text
+    payload = {
+      title: 'DuoPay',
+      body: event.data.text() || 'You have a new update.',
+      url: '/',
+      type: 'SYSTEM',
+    };
+  }
+
+  const title = payload.title || 'DuoPay';
+  const options = {
+    body: payload.body || '',
+    icon: payload.icon || '/icon-192x192.png',
+    badge: payload.badge || '/icon-192x192.png',
+    data: {
+      url: payload.url || '/',
+      type: payload.type || 'SYSTEM',
+      timestamp: Date.now(),
+      ...(payload.data || {}),
+    },
+    tag: payload.tag || `duopay-${payload.type || 'notice'}-${Date.now()}`,
+    renotify: true,
+    vibrate: [100, 50, 100],
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// ============================================================================
+// 8. Notification Click Handler (Safe-Origin Window Focus & Routing)
+// ============================================================================
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const rawUrl = event.notification.data?.url || '/';
+
+  // Strict URL Validation: Only allow same-origin relative paths, prevent open redirect attacks
+  let targetPath = '/';
+  if (typeof rawUrl === 'string' && rawUrl.startsWith('/') && !rawUrl.startsWith('//')) {
+    try {
+      const dummyOrigin = self.location.origin;
+      const parsed = new URL(rawUrl, dummyOrigin);
+      if (parsed.origin === dummyOrigin) {
+        targetPath = parsed.pathname + parsed.search + parsed.hash;
+      }
+    } catch (e) {
+      targetPath = '/';
+    }
+  }
+
+  const destinationUrl = new URL(targetPath, self.location.origin).href;
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // If an existing window/tab of DuoPay is open, focus it and navigate
+        for (const client of clientList) {
+          if ('focus' in client) {
+            client.focus();
+            if ('navigate' in client && targetPath !== '/') {
+              return client.navigate(destinationUrl);
+            }
+            return client;
+          }
+        }
+        // Otherwise, open a new window
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(destinationUrl);
+        }
+      })
+  );
+});
+

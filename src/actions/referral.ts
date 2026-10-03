@@ -17,6 +17,7 @@ import {
   formatPaiseToRupees,
   ReferralSummary,
 } from "@/domain/referral"
+import { sendNotification } from "@/services/notification"
 
 /**
  * Retrieves the authenticated user's referral summary, server-authoritative statistics,
@@ -282,6 +283,22 @@ export async function applyReferralCode(rawCode: string): Promise<{
         rewardPaise: SIGNUP_REWARD_PAISE,
       },
     })
+
+    // Notify referrer of signup bonus
+    const refereeUser = await prisma.user.findUnique({
+      where: { id: refereeId },
+      select: { name: true },
+    })
+    const refereeName = refereeUser?.name || "A friend"
+
+    sendNotification({
+      userId: referrer.id,
+      type: "REFERRAL_REWARD_EARNED",
+      title: "Referral Bonus Earned! 🎉",
+      body: `${refereeName} joined DuoPay — ₹11 has been added to your cashback ledger!`,
+      url: "/referrals",
+      data: { amountPaise: SIGNUP_REWARD_PAISE, refereeId },
+    }).catch(() => {})
 
     try {
       revalidatePath("/referrals")
