@@ -44,7 +44,7 @@ export default function AddMemberForm({ groupId }: { groupId: string }) {
           type="text"
           value={phoneOrUpi}
           onChange={(e) => setPhoneOrUpi(e.target.value)}
-          placeholder="+91 9876543210 or name@upi"
+          placeholder="Phone number or UPI ID"
           required
           className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
         />

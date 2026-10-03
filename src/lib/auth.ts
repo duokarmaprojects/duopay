@@ -13,8 +13,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Credentials({
       name: "Phone Number",
       credentials: {
-        phone: { label: "Phone Number", type: "text", placeholder: "e.g. 9876543210" },
-        name: { label: "Full Name", type: "text", placeholder: "e.g. Rahul" }
+        phone: { label: "Phone Number", type: "text", placeholder: "Mobile number" },
+        name: { label: "Full Name", type: "text", placeholder: "Full Name" }
       },
       async authorize(credentials) {
         if (!credentials?.phone || typeof credentials.phone !== "string") return null

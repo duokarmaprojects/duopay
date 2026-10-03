@@ -202,7 +202,7 @@ export default function UpiModal({
                   type="text"
                   value={upiInput}
                   onChange={(e) => handleInputChange(e.target.value)}
-                  placeholder="e.g. moiz@upi"
+                  placeholder="username@bank"
                   className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>

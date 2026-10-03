@@ -75,14 +75,38 @@ body {
 
 /* Base input overrides for Dark Mode */
 .dark input[type="text"],
+.dark input[type="tel"],
 .dark input[type="number"],
 .dark input[type="password"],
 .dark input[type="email"] {
-  background-color: var(--color-gray-50) !important;
-  color: var(--color-gray-900) !important;
-  border-color: var(--color-gray-200) !important;
+  color-scheme: dark;
 }
 
 .dark input::placeholder {
   color: var(--color-gray-400) !important;
+}
+
+/* Chrome/Safari/Edge autofill override for dark mode */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #18181b inset !important;
+  box-shadow: 0 0 0 1000px #18181b inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+  color-scheme: dark !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover, 
+.dark input:-webkit-autofill:focus, 
+.dark input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #18181b inset !important;
+  box-shadow: 0 0 0 1000px #18181b inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+  color-scheme: dark !important;
+  transition: background-color 5000s ease-in-out 0s;
 }

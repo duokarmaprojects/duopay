@@ -35,9 +35,14 @@ export default async function SetupProfilePage() {
             name="name"
             type="text"
             defaultValue={user?.name && user.name !== "New User" ? user.name : ""}
-            placeholder="e.g. Rahul Sharma"
+            placeholder="Full name"
             required
-            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all text-base font-medium"
+            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all text-base font-medium [color-scheme:dark]"
+            style={{
+              WebkitBoxShadow: "0 0 0 1000px #18181b inset",
+              WebkitTextFillColor: "#ffffff",
+              caretColor: "#ffffff",
+            }}
           />
         </div>
 
@@ -51,9 +56,14 @@ export default async function SetupProfilePage() {
             type="tel"
             defaultValue={user?.phone || ""}
             readOnly={!!user?.phone}
-            placeholder="e.g. +91 9876543210"
+            placeholder="Phone number"
             required
-            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white read-only:opacity-60 read-only:cursor-not-allowed transition-all text-base font-medium"
+            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white read-only:opacity-60 read-only:cursor-not-allowed transition-all text-base font-medium [color-scheme:dark]"
+            style={{
+              WebkitBoxShadow: "0 0 0 1000px #18181b inset",
+              WebkitTextFillColor: "#ffffff",
+              caretColor: "#ffffff",
+            }}
           />
         </div>
 
@@ -66,12 +76,17 @@ export default async function SetupProfilePage() {
             name="upiId"
             type="text"
             defaultValue={user?.upiId || ""}
-            placeholder="e.g. name@okhdfcbank"
+            placeholder="username@bank"
             required
-            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all text-base font-medium font-mono"
+            className="w-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl px-4 py-3.5 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all text-base font-medium font-mono [color-scheme:dark]"
+            style={{
+              WebkitBoxShadow: "0 0 0 1000px #18181b inset",
+              WebkitTextFillColor: "#ffffff",
+              caretColor: "#ffffff",
+            }}
           />
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            Format: username@handle (e.g. rahul@okaxis). Used for receiving settlements.
+            Format: username@handle (e.g. username@bank). Used for receiving settlements.
           </p>
         </div>
 

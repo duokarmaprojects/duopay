@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useEffect, useTransition } from "react"
 import Image from "next/image"
 import { InstallPwaButton } from "@/components/ui/InstallPwaButton"
 
@@ -13,6 +13,30 @@ export function LoginForm({ loginAction }: LoginFormProps) {
   const [rawDigits, setRawDigits] = useState("")
   const [name, setName] = useState("")
   const [isPending, startTransition] = useTransition()
+
+  // Restore input on mount so refresh doesn't wipe out filled details
+  useEffect(() => {
+    try {
+      const savedPhone = localStorage.getItem("duopay_login_phone")
+      const savedName = localStorage.getItem("duopay_login_name")
+
+      if (savedPhone) {
+        const digits = savedPhone.replace(/\D/g, "").slice(0, 10)
+        setRawDigits(digits)
+        if (digits.length > 5) {
+          setPhoneDisplay(`${digits.slice(0, 5)} ${digits.slice(5)}`)
+        } else {
+          setPhoneDisplay(digits)
+        }
+      }
+
+      if (savedName) {
+        setName(savedName)
+      }
+    } catch {
+      // Storage unavailable in private browsing sandbox
+    }
+  }, [])
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let input = e.target.value.replace(/\D/g, "")
@@ -28,12 +52,24 @@ export function LoginForm({ loginAction }: LoginFormProps) {
     const digits = input.slice(0, 10)
     setRawDigits(digits)
 
+    try {
+      localStorage.setItem("duopay_login_phone", digits)
+    } catch {}
+
     // Format as 5 digits + space + 5 digits
     if (digits.length > 5) {
       setPhoneDisplay(`${digits.slice(0, 5)} ${digits.slice(5)}`)
     } else {
       setPhoneDisplay(digits)
     }
+  }
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setName(val)
+    try {
+      localStorage.setItem("duopay_login_name", val)
+    } catch {}
   }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -86,8 +122,7 @@ export function LoginForm({ loginAction }: LoginFormProps) {
             Phone number
           </label>
           <div className="flex items-center w-full h-12 rounded-xl bg-zinc-900/90 border border-zinc-800/90 px-3.5 transition-all focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
-            <div className="flex items-center gap-1.5 pr-3 border-r border-zinc-800 text-xs font-semibold text-zinc-300 select-none">
-              <span className="text-xs" aria-hidden="true">🇮🇳</span>
+            <div className="flex items-center pr-3 border-r border-zinc-800 text-xs font-semibold text-zinc-300 select-none">
               <span>+91</span>
             </div>
             <input
@@ -97,10 +132,15 @@ export function LoginForm({ loginAction }: LoginFormProps) {
               autoComplete="tel-national"
               value={phoneDisplay}
               onChange={handlePhoneChange}
-              placeholder="98765 43210"
+              placeholder="Enter mobile number"
               required
               disabled={isPending}
-              className="flex-1 bg-transparent pl-3 text-sm font-medium text-white placeholder:text-zinc-600 focus:outline-none tracking-wider disabled:opacity-50"
+              className="flex-1 bg-transparent pl-3 text-sm font-medium text-white placeholder:text-zinc-600 focus:outline-none tracking-wider disabled:opacity-50 [color-scheme:dark]"
+              style={{
+                WebkitBoxShadow: "0 0 0 1000px #18181b inset",
+                WebkitTextFillColor: "#ffffff",
+                caretColor: "#ffffff",
+              }}
             />
           </div>
         </div>
@@ -123,10 +163,15 @@ export function LoginForm({ loginAction }: LoginFormProps) {
             type="text"
             autoComplete="name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter your name"
+            onChange={handleNameChange}
+            placeholder="Your name"
             disabled={isPending}
-            className="w-full h-12 rounded-xl bg-zinc-900/90 border border-zinc-800/90 px-3.5 text-sm font-normal text-white placeholder:text-zinc-600 transition-all focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 disabled:opacity-50"
+            className="w-full h-12 rounded-xl bg-zinc-900/90 border border-zinc-800/90 px-3.5 text-sm font-normal text-white placeholder:text-zinc-600 transition-all focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 disabled:opacity-50 [color-scheme:dark]"
+            style={{
+              WebkitBoxShadow: "0 0 0 1000px #18181b inset",
+              WebkitTextFillColor: "#ffffff",
+              caretColor: "#ffffff",
+            }}
           />
         </div>
 
@@ -153,7 +198,7 @@ export function LoginForm({ loginAction }: LoginFormProps) {
 
         {/* 5. INSTALL BUTTON */}
         <div className="pt-2">
-          <InstallPwaButton label="↓ Install DuoPay" />
+          <InstallPwaButton label="Install DuoPay" />
         </div>
       </form>
     </div>
