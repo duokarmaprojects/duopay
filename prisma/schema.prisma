@@ -16,10 +16,6 @@ model User {
   image         String?
   phone         String?   // Normalized E.164
   upiId                    String?
-  upiVerified              Boolean   @default(false)
-  upiVerifiedAt            DateTime?
-  upiVerificationReference String?
-  upiVerifiedName          String?
   role                     String    @default("USER") // USER, ADMIN
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
@@ -191,28 +187,6 @@ model SystemError {
   @@index([createdAt])
 }
 
-model UpiVerification {
-  id           String   @id @default(cuid())
-  upiId        String   @unique
-  verifiedName String?
-  status       String   // VERIFIED, FAILED, UNAVAILABLE
-  provider     String   // e.g. "cashfree", "razorpay", "setu", "none"
-  referenceId  String?
-  verifiedAt   DateTime @default(now())
-  expiresAt    DateTime
-
-  @@index([upiId])
-}
-
-model UpiVerificationAttempt {
-  id        String   @id @default(cuid())
-  userId    String
-  upiId     String
-  success   Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([userId, createdAt])
-}
 
 model UserSettings {
   id                   String   @id @default(cuid())

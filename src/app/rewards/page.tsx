@@ -65,23 +65,12 @@ export default async function RewardsPage() {
             <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-zinc-500">
               Payout Destination
             </h2>
-            {summary.upiVerified ? (
-              <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 size={12} />
-                Verified
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-                <AlertCircle size={12} />
-                Action Needed
-              </span>
-            )}
           </div>
 
-          {summary.upiVerified && summary.upiId ? (
+          {summary.upiId ? (
             <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-100 dark:border-zinc-800">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                   <ShieldCheck size={20} />
                 </div>
                 <div>
@@ -89,7 +78,7 @@ export default async function RewardsPage() {
                     {summary.upiId}
                   </p>
                   <p className="text-[11px] text-gray-500 dark:text-zinc-400">
-                    {summary.upiVerifiedName || "Verified Account"}
+                    Primary Payout Address
                   </p>
                 </div>
               </div>
@@ -105,9 +94,9 @@ export default async function RewardsPage() {
               <div className="flex items-start gap-2.5">
                 <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div className="text-xs text-amber-900 dark:text-amber-200">
-                  <p className="font-semibold">Verify your UPI ID to unlock payouts</p>
+                  <p className="font-semibold">Add your UPI ID to unlock payouts</p>
                   <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
-                    Redemption requires a verified bank account destination.
+                    Redemption requires a UPI payment destination address.
                   </p>
                 </div>
               </div>
@@ -115,7 +104,7 @@ export default async function RewardsPage() {
                 href="/profile"
                 className="self-end text-xs font-bold text-amber-700 dark:text-amber-300 underline"
               >
-                Go to Profile to Verify UPI →
+                Go to Profile to Add UPI →
               </Link>
             </div>
           )}

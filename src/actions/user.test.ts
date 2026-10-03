@@ -3,8 +3,6 @@ import { updateUpiId } from "./user"
 import { prisma } from "@/lib/db"
 import { auth } from "@/lib/auth"
 
-import { resetRateLimitsForTesting } from "@/services/upiVerification"
-
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
 }))
@@ -23,161 +21,91 @@ vi.mock("@/lib/db", () => ({
       findUnique: vi.fn(),
       update: vi.fn(),
     },
-    upiVerification: {
-      findUnique: vi.fn(),
-    },
-    upiVerificationAttempt: {
-      create: vi.fn().mockResolvedValue({ id: "att-1" }),
-    },
   },
 }))
 
-describe("Server-Side UPI Enforcement (user.ts)", () => {
+describe("Server-Side UPI ID Management (user.ts)", () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    resetRateLimitsForTesting()
     vi.mocked(auth as any).mockResolvedValue({
       user: { id: "test-user-id" },
     } as any)
-    vi.mocked(prisma.upiVerificationAttempt.create).mockResolvedValue({ id: "att-1" } as any)
   })
 
-  it("should reject unauthenticated requests", async () => {
+  it("1. should reject unauthenticated requests", async () => {
     vi.mocked(auth as any).mockResolvedValueOnce(null as any)
     await expect(updateUpiId("moiz@oksbi")).rejects.toThrow("Unauthorized")
+    expect(prisma.user.update).not.toHaveBeenCalled()
   })
 
-  it("should reject malformed UPI IDs", async () => {
+  it("2. should reject malformed UPI IDs", async () => {
     await expect(updateUpiId("not-a-upi")).rejects.toThrow()
     await expect(updateUpiId("moiz@@upi")).rejects.toThrow()
     await expect(updateUpiId("moiz @upi")).rejects.toThrow()
+    await expect(updateUpiId("")).rejects.toThrow()
+    expect(prisma.user.update).not.toHaveBeenCalled()
   })
 
-  it("should save unverified UPI ID with upiVerified: false when not verified by provider", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
-      id: "test-user-id",
-      upiId: "old@upi",
-      upiVerified: true,
-    } as any)
-
-    // No verified cache record
-    vi.mocked(prisma.upiVerification.findUnique).mockResolvedValueOnce(null)
-
-    const res = await updateUpiId("newfake@oksbi")
+  it("3. should save user's original/real valid UPI ID without requiring verification", async () => {
+    const res = await updateUpiId("moizdhilawala99@oksbi")
 
     expect(res.success).toBe(true)
-    expect(res.upiVerified).toBe(false)
+    expect(res.upiId).toBe("moizdhilawala99@oksbi")
+    // Verification fields should not exist on response
+    expect((res as any).upiVerified).toBeUndefined()
+    expect((res as any).verifiedName).toBeUndefined()
+
+    // Strictly saves against session user
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "test-user-id" },
-      data: expect.objectContaining({
-        upiId: "newfake@oksbi",
-        upiVerified: false,
-        upiVerifiedAt: null,
-        upiVerificationReference: null,
-        upiVerifiedName: null,
-      }),
+      data: {
+        upiId: "moizdhilawala99@oksbi",
+      },
     })
   })
 
-  it("should reset upiVerified: false if a previously verified user changes UPI ID to a new unverified one", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
-      id: "test-user-id",
-      upiId: "moiz@oksbi",
-      upiVerified: true,
+  it("4. should support editing UPI ID to a new valid UPI ID", async () => {
+    const res1 = await updateUpiId("first@oksbi")
+    expect(res1.upiId).toBe("first@oksbi")
+
+    const res2 = await updateUpiId("second@ybl")
+    expect(res2.upiId).toBe("second@ybl")
+
+    expect(prisma.user.update).toHaveBeenLastCalledWith({
+      where: { id: "test-user-id" },
+      data: {
+        upiId: "second@ybl",
+      },
+    })
+  })
+
+  it("5. should normalize UPI IDs to lowercase", async () => {
+    const res = await updateUpiId("MoizDhilawala99@OKSBI")
+
+    expect(res.success).toBe(true)
+    expect(res.upiId).toBe("moizdhilawala99@oksbi")
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "test-user-id" },
+      data: {
+        upiId: "moizdhilawala99@oksbi",
+      },
+    })
+  })
+
+  it("6. should strictly isolate updates to session user ID (BOLA/IDOR protection)", async () => {
+    vi.mocked(auth as any).mockResolvedValueOnce({
+      user: { id: "victim-alice" },
     } as any)
 
-    vi.mocked(prisma.upiVerification.findUnique).mockResolvedValueOnce(null)
+    await updateUpiId("alice@okhdfc")
 
-    const res = await updateUpiId("someoneelse@oksbi")
-
-    expect(res.upiVerified).toBe(false)
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          upiId: "someoneelse@oksbi",
-          upiVerified: false,
-        }),
+        where: { id: "victim-alice" },
+        data: {
+          upiId: "alice@okhdfc",
+        },
       })
     )
-  })
-
-  it("should save as verified only if provider verification proof exists", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
-      id: "test-user-id",
-      upiId: "old@upi",
-      upiVerified: false,
-    } as any)
-
-    vi.mocked(prisma.upiVerification.findUnique).mockResolvedValueOnce({
-      id: "v-1",
-      upiId: "verified@oksbi",
-      verifiedName: "VERIFIED NAME",
-      status: "VERIFIED",
-      provider: "razorpay",
-      referenceId: "ref_101",
-      verifiedAt: new Date(),
-      expiresAt: new Date(Date.now() + 86400000),
-    } as any)
-
-    const res = await updateUpiId("verified@oksbi")
-
-    expect(res.success).toBe(true)
-    expect(res.upiVerified).toBe(true)
-    expect(res.verifiedName).toBe("VERIFIED NAME")
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: "test-user-id" },
-      data: expect.objectContaining({
-        upiId: "verified@oksbi",
-        upiVerified: true,
-        upiVerifiedName: "VERIFIED NAME",
-      }),
-    })
-  })
-
-  describe("verifyUpiIdAction", () => {
-    it("should reject unauthenticated verify actions", async () => {
-      const { verifyUpiIdAction } = await import("./user")
-      vi.mocked(auth as any).mockResolvedValueOnce(null)
-      await expect(verifyUpiIdAction("moiz@oksbi")).rejects.toThrow("Unauthorized")
-    })
-
-    it("should only update the authenticated session user and prevent cross-user verification tampering", async () => {
-      const { verifyUpiIdAction } = await import("./user")
-      vi.mocked(auth as any).mockResolvedValue({
-        user: { id: "auth-user-123" },
-      } as any)
-
-      // User has current UPI
-      vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
-        id: "auth-user-123",
-        upiId: "myvpa@oksbi",
-      } as any)
-
-      // Verified result in cache
-      vi.mocked(prisma.upiVerification.findUnique).mockResolvedValueOnce({
-        id: "v-2",
-        upiId: "myvpa@oksbi",
-        verifiedName: "AUTH USER NAME",
-        status: "VERIFIED",
-        provider: "cashfree",
-        referenceId: "ref-999",
-        verifiedAt: new Date(),
-        expiresAt: new Date(Date.now() + 86400000),
-      } as any)
-
-      const result = await verifyUpiIdAction("myvpa@oksbi")
-      expect(result.status).toBe("VERIFIED")
-
-      // MUST update ONLY auth-user-123
-      expect(prisma.user.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: "auth-user-123" },
-          data: expect.objectContaining({
-            upiVerified: true,
-            upiVerifiedName: "AUTH USER NAME",
-          }),
-        })
-      )
-    })
   })
 })

@@ -90,10 +90,6 @@ vi.mock("@/lib/db", () => ({
       createMany: vi.fn(),
       deleteMany: vi.fn(),
     },
-    upiVerificationAttempt: {
-      count: vi.fn().mockResolvedValue(0),
-      create: vi.fn().mockResolvedValue({ id: "att-1" }),
-    },
     analyticsEvent: {
       create: vi.fn().mockResolvedValue({ id: "event-1" }),
     },
@@ -364,7 +360,6 @@ describe("Production Security Hardening Test Suite", () => {
         id: "user-bob",
         name: "Bob",
         upiId: "bob@oksbi",
-        upiVerified: true,
       } as any)
 
       // Balances report that Alice owes 0 to Bob
@@ -388,7 +383,6 @@ describe("Production Security Hardening Test Suite", () => {
         id: "user-bob",
         name: "Bob",
         upiId: "bob@oksbi",
-        upiVerified: true,
       } as any)
 
       // Alice only owes Bob 500 paise (₹5.00)

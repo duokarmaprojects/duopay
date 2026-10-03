@@ -163,7 +163,7 @@ export default function ReferralTermsPage() {
             </p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li>Minimum payout threshold: <strong>₹25.00</strong> (2,500 paise).</li>
-              <li>Payout destination: Transferred directly to your provider-verified UPI ID.</li>
+              <li>Payout destination: Transferred directly to your stored UPI ID.</li>
               <li>Processing: Payout requests are processed securely with cryptographic idempotency.</li>
             </ul>
           </div>

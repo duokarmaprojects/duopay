@@ -101,7 +101,6 @@ describe("DUOPAY ZERO-TRUST FINANCIAL MANIPULATION HARDENING SUITE", () => {
       name: "Alice",
       role: "USER",
       upiId: "alice@okaxis",
-      upiVerified: true,
       cashbackBalancePaise: 5000, // ₹50.00
     } as any)
 
@@ -117,7 +116,6 @@ describe("DUOPAY ZERO-TRUST FINANCIAL MANIPULATION HARDENING SUITE", () => {
       id: "user_bob",
       name: "Bob",
       upiId: "bob@oksbi",
-      upiVerified: true,
     } as any)
 
     vi.mocked(getUserBalances).mockResolvedValueOnce({
@@ -172,7 +170,6 @@ describe("DUOPAY ZERO-TRUST FINANCIAL MANIPULATION HARDENING SUITE", () => {
       id: "user_bob",
       name: "Bob",
       upiId: "bob@oksbi",
-      upiVerified: true,
     } as any)
 
     vi.mocked(getUserBalances).mockResolvedValueOnce({
@@ -204,7 +201,6 @@ describe("DUOPAY ZERO-TRUST FINANCIAL MANIPULATION HARDENING SUITE", () => {
       id: "user_bob",
       name: "Bob",
       upiId: "bob@oksbi",
-      upiVerified: true,
     } as any)
 
     vi.mocked(getUserBalances).mockResolvedValueOnce({
@@ -249,7 +245,6 @@ describe("DUOPAY ZERO-TRUST FINANCIAL MANIPULATION HARDENING SUITE", () => {
       id: "unrelated_charlie",
       name: "Charlie",
       upiId: "charlie@okaxis",
-      upiVerified: true,
     } as any)
 
     vi.mocked(getUserBalances).mockResolvedValueOnce({
@@ -283,7 +278,6 @@ describe("DUOPAY ZERO-TRUST FINANCIAL MANIPULATION HARDENING SUITE", () => {
       id: "user_bob",
       name: "Bob",
       upiId: "bob@oksbi",
-      upiVerified: true,
     } as any)
 
     // Group member query returns only Alice, Bob is not a member of foreign-group
@@ -311,7 +305,6 @@ describe("DUOPAY ZERO-TRUST FINANCIAL MANIPULATION HARDENING SUITE", () => {
       id: SESSION_USER_ID,
       cashbackBalancePaise: 1000,
       upiId: "alice@okaxis",
-      upiVerified: true,
     } as any)
 
     // Attempting to redeem fails because session user has < 2500 paise, even if victim has 100,000 paise
@@ -452,7 +445,6 @@ describe("DUOPAY ZERO-TRUST FINANCIAL MANIPULATION HARDENING SUITE", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       id: SESSION_USER_ID,
       cashbackBalancePaise: 5000,
-      upiVerified: true,
       upiId: "alice@okaxis",
     } as any)
 

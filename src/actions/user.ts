@@ -8,7 +8,6 @@ import { redirect } from "next/navigation"
 
 import { normalizePhoneNumber } from "@/domain/phone"
 import { validateUpiFormat } from "@/domain/upi"
-import { verifyUpiId } from "@/services/upiVerification"
 import { checkActionRateLimit } from "@/lib/rateLimit"
 import { logSecurityEvent } from "@/lib/securityAudit"
 import { sanitizeTextInput, validateImageSignature } from "@/lib/security"
@@ -29,12 +28,10 @@ export async function completeProfile(formData: FormData) {
     throw new Error("Not authenticated")
   }
 
-  // Reject privileged role or verification injection attempts
+  // Reject privileged role or balance injection attempts
   if (
     formData.has("role") ||
     formData.has("isAdmin") ||
-    formData.has("upiVerified") ||
-    formData.has("upiVerificationReference") ||
     formData.has("cashbackBalancePaise") ||
     formData.has("cashback")
   ) {
@@ -43,7 +40,7 @@ export async function completeProfile(formData: FormData) {
       userId: session.user.id,
       details: { action: "completeProfile_forbidden_field_injected" },
     })
-    throw new Error("Client submission of privileged user or verification state is strictly prohibited")
+    throw new Error("Client submission of privileged user or balance state is strictly prohibited")
   }
 
   const rawName = (formData.get("name") as string | null)?.trim()
@@ -73,51 +70,10 @@ export async function completeProfile(formData: FormData) {
       ...(parsed.data.name ? { name: parsed.data.name } : {}),
       phone,
       upiId: format.normalized,
-      upiVerified: false,
-      upiVerifiedAt: null,
-      upiVerificationReference: null,
-      upiVerifiedName: null,
     }
   })
 
   redirect('/')
-}
-
-export async function verifyUpiIdAction(rawUpiId: string) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    await logSecurityEvent({
-      type: "AUTH_UNAUTHORIZED_ACCESS",
-      details: { action: "verifyUpiIdAction" },
-    })
-    throw new Error("Unauthorized")
-  }
-
-  const result = await verifyUpiId(rawUpiId, session.user.id)
-
-  if (result.exists && result.status === "VERIFIED") {
-    const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { upiId: true },
-    })
-
-    if (currentUser?.upiId === result.vpa) {
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: {
-          upiVerified: true,
-          upiVerifiedAt: new Date(),
-          upiVerificationReference: result.referenceId || null,
-          upiVerifiedName: result.verifiedName || null,
-        },
-      })
-      revalidatePath('/profile')
-      revalidatePath('/settle')
-      revalidatePath('/')
-    }
-  }
-
-  return result
 }
 
 export async function updateUpiId(newUpi: string) {
@@ -137,37 +93,13 @@ export async function updateUpiId(newUpi: string) {
 
   const normalized = format.normalized
 
-  // Check if this normalized UPI ID has verified proof in UpiVerification cache
-  const cachedVerification = await prisma.upiVerification.findUnique({
-    where: { upiId: normalized }
+  // Save the normalized UPI ID directly for the authenticated session user
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: {
+      upiId: normalized,
+    }
   })
-
-  const isVerifiedByProvider = cachedVerification?.status === 'VERIFIED' && cachedVerification.expiresAt > new Date()
-
-  if (isVerifiedByProvider) {
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: {
-        upiId: normalized,
-        upiVerified: true,
-        upiVerifiedAt: cachedVerification.verifiedAt,
-        upiVerificationReference: cachedVerification.referenceId,
-        upiVerifiedName: cachedVerification.verifiedName,
-      }
-    })
-  } else {
-    // Unverified UPI ID: MUST clear previous verification completely
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: {
-        upiId: normalized,
-        upiVerified: false,
-        upiVerifiedAt: null,
-        upiVerificationReference: null,
-        upiVerifiedName: null,
-      }
-    })
-  }
 
   revalidatePath('/profile')
   revalidatePath('/settle')
@@ -176,8 +108,6 @@ export async function updateUpiId(newUpi: string) {
   return {
     success: true,
     upiId: normalized,
-    upiVerified: Boolean(isVerifiedByProvider),
-    verifiedName: isVerifiedByProvider ? cachedVerification.verifiedName : null
   }
 }
 

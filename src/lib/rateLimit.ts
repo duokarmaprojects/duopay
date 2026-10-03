@@ -11,8 +11,6 @@ interface RateLimitConfig {
 export const RATE_LIMIT_CONFIGS = {
   // Authentication attempts: 10 per 15 mins
   AUTH: { maxAttempts: 10, windowMs: 15 * 60 * 1000 },
-  // UPI Verification: 5 per 10 mins
-  UPI_VERIFICATION: { maxAttempts: 5, windowMs: 10 * 60 * 1000 },
   // Settlements: 10 per 1 min
   SETTLEMENT: { maxAttempts: 10, windowMs: 60 * 1000 },
   // Expense creation: 20 per 1 min

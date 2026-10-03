@@ -118,7 +118,7 @@ export async function recordSettlement(formData: FormData) {
   // 2. Validate receiver exists in DB
   const receiver = await prisma.user.findUnique({
     where: { id: receiverId },
-    select: { id: true, name: true, upiId: true, upiVerified: true },
+    select: { id: true, name: true, upiId: true },
   })
   if (!receiver) {
     throw new Error("Recipient user does not exist")

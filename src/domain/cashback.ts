@@ -108,7 +108,7 @@ export function paiseToRupees(paise: number): string {
  */
 export function canRedeemCashback(
   balancePaise: number,
-  upiVerified: boolean,
+  hasUpiId: boolean,
   hasPendingRedemption = false
 ): { canRedeem: boolean; reason?: string } {
   if (hasPendingRedemption) {
@@ -126,10 +126,10 @@ export function canRedeemCashback(
     }
   }
 
-  if (!upiVerified) {
+  if (!hasUpiId) {
     return {
       canRedeem: false,
-      reason: "Verified UPI ID required for payout destination",
+      reason: "UPI ID required for payout destination",
     }
   }
 

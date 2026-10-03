@@ -69,13 +69,9 @@ export default async function ProfilePage() {
           <div className="flex items-center gap-3 text-sm text-gray-500 font-medium">
             <span>{user?.phone}</span>
             <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-            <span className="text-gray-900 font-medium">{user?.upiId || 'No UPI ID'}</span>
+            <span className="text-gray-900 font-medium font-mono">{user?.upiId || 'No UPI ID'}</span>
           </div>
-          <UpiModal 
-            currentUpiId={user?.upiId || null} 
-            isVerified={Boolean(user?.upiVerified)} 
-            verifiedName={user?.upiVerifiedName} 
-          />
+          <UpiModal currentUpiId={user?.upiId || null} />
         </div>
       </header>
 
@@ -114,7 +110,7 @@ export default async function ProfilePage() {
         {/* 4. Quick Actions */}
         <SectionTitle>Quick Actions</SectionTitle>
         <div className="px-6 flex gap-3">
-          <UpiDetailsCard />
+          <UpiDetailsCard currentUpiId={user?.upiId || null} />
           <Link href="/groups" className="flex-1 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex flex-col gap-3 active:scale-95 transition-transform">
             <div className="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center">
               <PieChart size={18} />

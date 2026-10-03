@@ -20,9 +20,7 @@ export interface CashbackSummary {
   remainingPaise: number
   isUnlocked: boolean
   progressPercentage: number
-  upiVerified: boolean
   upiId: string | null
-  upiVerifiedName: string | null
   canRedeem: boolean
   reason?: string
   activeRedemption: {
@@ -34,7 +32,7 @@ export interface CashbackSummary {
 }
 
 /**
- * Retrieves the user's cashback balance, progress towards redemption, and verified payout info.
+ * Retrieves the user's cashback balance, progress towards redemption, and payout info.
  */
 export async function getCashbackSummary(): Promise<CashbackSummary> {
   const session = await auth()
@@ -49,8 +47,6 @@ export async function getCashbackSummary(): Promise<CashbackSummary> {
     select: {
       cashbackBalancePaise: true,
       upiId: true,
-      upiVerified: true,
-      upiVerifiedName: true,
     },
   })
 
@@ -80,7 +76,7 @@ export async function getCashbackSummary(): Promise<CashbackSummary> {
 
   const redemptionCheck = canRedeemCashback(
     balancePaise,
-    user.upiVerified,
+    Boolean(user.upiId),
     Boolean(activeRedemption)
   )
 
@@ -91,9 +87,7 @@ export async function getCashbackSummary(): Promise<CashbackSummary> {
     remainingPaise,
     isUnlocked,
     progressPercentage,
-    upiVerified: user.upiVerified,
     upiId: user.upiId,
-    upiVerifiedName: user.upiVerifiedName,
     canRedeem: redemptionCheck.canRedeem,
     reason: redemptionCheck.reason,
     activeRedemption,
@@ -203,7 +197,6 @@ export async function requestCashbackRedemption(formData?: FormData) {
         id: true,
         cashbackBalancePaise: true,
         upiId: true,
-        upiVerified: true,
       },
     })
 
@@ -211,8 +204,8 @@ export async function requestCashbackRedemption(formData?: FormData) {
       throw new Error("User record not found")
     }
 
-    if (!user.upiVerified || !user.upiId) {
-      throw new Error("A verified UPI ID is required to receive cashback payouts")
+    if (!user.upiId) {
+      throw new Error("A UPI ID is required to receive cashback payouts")
     }
 
     if (user.cashbackBalancePaise < MIN_REDEMPTION_THRESHOLD_PAISE) {

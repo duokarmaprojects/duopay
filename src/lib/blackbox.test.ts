@@ -5,13 +5,12 @@ import { recordSettlement } from "@/actions/settlement"
 import { addExpense } from "@/actions/expense"
 import { joinGroupWithInviteToken } from "@/actions/group"
 import { updateUserSettings } from "@/actions/settings"
-import { verifyUpiIdAction } from "@/actions/user"
+import { updateUpiId } from "@/actions/user"
 import { getUserBalances } from "@/services/balance"
 import { POST as handlePaymentWebhook } from "@/app/api/webhooks/payments/route"
 import { generateGroupInviteToken } from "./invite"
 import { isPaymentVerified, isPaymentManual } from "@/domain/payment"
 import { resetAllRateLimitsForTesting } from "./rateLimit"
-import { verifyUpiId } from "@/services/upiVerification"
 import crypto from "crypto"
 
 vi.mock("@/lib/auth", () => ({
@@ -30,15 +29,6 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/services/balance", () => ({
   getUserBalances: vi.fn(),
-}))
-
-vi.mock("@/services/upiVerification", () => ({
-  verifyUpiId: vi.fn(),
-  validateUpiFormat: vi.fn((upi: string) => ({
-    valid: true,
-    normalized: upi.toLowerCase().trim(),
-  })),
-  resetRateLimitsForTesting: vi.fn(),
 }))
 
 vi.mock("@/lib/db", () => ({
@@ -82,13 +72,6 @@ vi.mock("@/lib/db", () => ({
       createMany: vi.fn(),
       deleteMany: vi.fn(),
     },
-    upiVerification: {
-      findUnique: vi.fn(),
-    },
-    upiVerificationAttempt: {
-      count: vi.fn().mockResolvedValue(0),
-      create: vi.fn().mockResolvedValue({ id: "att-1" }),
-    },
     analyticsEvent: {
       create: vi.fn().mockResolvedValue({ id: "event-1" }),
     },
@@ -112,16 +95,6 @@ describe("DUOPAY BLACK-BOX PAYMENT & ACCESS SECURITY ATTACK SUITE", () => {
     vi.mocked(auth as any).mockResolvedValue({
       user: { id: "attacker_alice", name: "Alice Attacker" },
     } as any)
-    vi.mocked(verifyUpiId).mockResolvedValue({
-      success: true,
-      exists: true,
-      status: "VERIFIED",
-      vpa: "alice@okaxis",
-      provider: "cashfree",
-      message: "Verified",
-      referenceId: "ref_123",
-      verifiedName: "Alice Attacker",
-    })
   })
 
   afterEach(() => {
@@ -728,24 +701,24 @@ describe("DUOPAY BLACK-BOX PAYMENT & ACCESS SECURITY ATTACK SUITE", () => {
   })
 
   // =========================================================================
-  // ATTACK 17: Change another user's UPI verification state
+  // ATTACK 17: Change another user's UPI ID
   // =========================================================================
-  it("Attack 17: Change another user's UPI verification state -> Strictly Isolated", async () => {
+  it("Attack 17: Change another user's UPI ID -> Strictly Isolated", async () => {
     // Current user in DB is attacker_alice
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       id: "attacker_alice",
       upiId: "alice@okaxis",
     } as any)
 
-    await verifyUpiIdAction("alice@okaxis")
+    await updateUpiId("alice@okaxis")
 
     // The update strictly targets session user, cannot touch victim
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: "attacker_alice" },
-        data: expect.objectContaining({
-          upiVerified: true,
-        }),
+        data: {
+          upiId: "alice@okaxis",
+        },
       })
     )
   })

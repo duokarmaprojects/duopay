@@ -186,7 +186,6 @@ describe("CASHBACK & REWARDS SECURITY & INTEGRITY AUDIT SUITE", () => {
       id: "user_alice",
       cashbackBalancePaise: 1500, // ₹15.00 < ₹25.00
       upiId: "alice@okaxis",
-      upiVerified: true,
     } as any)
 
     await expect(requestCashbackRedemption()).rejects.toThrow(
@@ -202,7 +201,6 @@ describe("CASHBACK & REWARDS SECURITY & INTEGRITY AUDIT SUITE", () => {
       id: "user_alice",
       cashbackBalancePaise: 0, // Alice has 0
       upiId: "alice@okaxis",
-      upiVerified: true,
     } as any)
 
     // Attacker cannot specify target userId; system strictly scopes to session user
@@ -492,7 +490,6 @@ describe("CASHBACK & REWARDS SECURITY & INTEGRITY AUDIT SUITE", () => {
       id: "user_alice",
       cashbackBalancePaise: 3000,
       upiId: "alice@okaxis",
-      upiVerified: true,
     } as any)
 
     // Active redemption already exists
@@ -512,7 +509,6 @@ describe("CASHBACK & REWARDS SECURITY & INTEGRITY AUDIT SUITE", () => {
       id: "user_alice",
       cashbackBalancePaise: 3000,
       upiId: "alice@okaxis",
-      upiVerified: true,
     } as any)
 
     vi.mocked(prisma.redemptionRequest.create).mockResolvedValueOnce({ id: "red-1" } as any)
@@ -574,7 +570,6 @@ describe("CASHBACK & REWARDS SECURITY & INTEGRITY AUDIT SUITE", () => {
       id: "user_alice",
       cashbackBalancePaise: 2500,
       upiId: "alice@okaxis",
-      upiVerified: true,
     } as any)
     vi.mocked(prisma.redemptionRequest.findFirst).mockResolvedValueOnce(null)
     vi.mocked(prisma.redemptionRequest.create).mockResolvedValueOnce({ id: "red-1" } as any)

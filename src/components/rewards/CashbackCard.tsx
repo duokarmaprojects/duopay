@@ -36,7 +36,7 @@ export default function CashbackCard({
       try {
         const res = await requestCashbackRedemption()
         if (res.success) {
-          setSuccessMessage(`Redemption of ${res.formattedAmount} submitted! Funds are processing to your verified UPI.`)
+          setSuccessMessage(`Redemption of ${res.formattedAmount} submitted! Funds are processing to your UPI address.`)
           setCurrentBalance(0)
         }
       } catch (err: any) {
@@ -84,13 +84,6 @@ export default function CashbackCard({
             </h3>
           </div>
         </div>
-
-        {summary.upiVerified && (
-          <div className="flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/50">
-            <ShieldCheck size={12} />
-            <span>UPI Ready</span>
-          </div>
-        )}
       </div>
 
       {/* Balance Display */}
@@ -157,7 +150,7 @@ export default function CashbackCard({
         {isUnlocked && !summary.activeRedemption && currentBalance > 0 && (
           <button
             onClick={handleRedeem}
-            disabled={isPending || !summary.upiVerified}
+            disabled={isPending || !summary.upiId}
             className="w-full py-2.5 px-4 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-gray-900 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPending ? (
@@ -165,12 +158,12 @@ export default function CashbackCard({
                 <Loader2 size={14} className="animate-spin" />
                 <span>Processing Redemption...</span>
               </>
-            ) : !summary.upiVerified ? (
-              <span>Verify UPI on Profile to Redeem</span>
+            ) : !summary.upiId ? (
+              <span>Add UPI on Profile to Redeem</span>
             ) : (
               <>
                 <Gift size={14} />
-                <span>Redeem {formattedBalance} to Verified UPI</span>
+                <span>Redeem {formattedBalance} to UPI</span>
               </>
             )}
           </button>
