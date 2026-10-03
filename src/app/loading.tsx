@@ -45,7 +45,7 @@ export default function AppLoading() {
 
       {/* Bottom navigation skeleton */}
       <nav className="fixed bottom-0 w-full max-w-md mx-auto bg-white border-t border-gray-100 flex justify-between px-6 pb-[env(safe-area-inset-bottom)] pt-2 z-20">
-        {[1, 2, 3, 4].map((i) => (
+        {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="flex flex-col items-center p-2">
             <div className="w-6 h-6 rounded-full bg-gray-100" />
             <div className="w-8 h-2 bg-gray-100 rounded mt-1.5" />

@@ -9,12 +9,10 @@ import {
   CheckCircle2,
   AlertCircle,
   HelpCircle,
-  User,
-  Users,
-  Activity,
 } from "lucide-react"
 import { getCashbackSummary, getCashbackHistory } from "@/actions/cashback"
 import CashbackCard from "@/components/rewards/CashbackCard"
+import BottomNav from "@/components/navigation/BottomNav"
 
 import { prisma } from "@/lib/db"
 
@@ -244,24 +242,11 @@ export default async function RewardsPage() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 w-full max-w-md mx-auto left-0 right-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-gray-100 dark:border-zinc-800 flex justify-between px-6 pb-[env(safe-area-inset-bottom)] pt-2 z-20">
-        <Link href="/" className="flex flex-col items-center p-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors">
-          <div className="p-1"><User size={24} /></div>
-          <span className="text-[10px] font-medium mt-1">Home</span>
-        </Link>
-        <Link href="/groups" className="flex flex-col items-center p-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors">
-          <div className="p-1"><Users size={24} /></div>
-          <span className="text-[10px] font-medium mt-1">Groups</span>
-        </Link>
-        <Link href="/activity" className="flex flex-col items-center p-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors">
-          <div className="p-1"><Activity size={24} /></div>
-          <span className="text-[10px] font-medium mt-1">Activity</span>
-        </Link>
-        <Link href="/profile" className="flex flex-col items-center p-2 text-amber-600 dark:text-amber-400">
-          <div className="p-1"><Sparkles size={24} /></div>
-          <span className="text-[10px] font-medium mt-1">Rewards</span>
-        </Link>
-      </nav>
+      <BottomNav
+        activeTab="rewards"
+        userImage={session.user.image}
+        userName={session.user.name}
+      />
     </div>
   )
 }

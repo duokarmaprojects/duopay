@@ -2,8 +2,9 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
 import Link from "next/link"
-import { Users, Plus } from "lucide-react"
+import { Plus, Users } from "lucide-react"
 import { GroupIcon } from "@/components/ui/GroupIcon"
+import BottomNav from "@/components/navigation/BottomNav"
 
 export default async function GroupsPage() {
   const session = await auth()
@@ -56,28 +57,11 @@ export default async function GroupsPage() {
         )}
       </div>
 
-      <nav className="fixed bottom-0 w-full max-w-md mx-auto bg-white border-t border-gray-100 flex justify-between px-6 pb-[env(safe-area-inset-bottom)] pt-2 z-20">
-        <Link href="/" className="flex flex-col items-center p-2 text-gray-400 hover:text-black transition-colors">
-          <div className="p-1"><Users size={24} className="opacity-0" style={{display: 'none'}}/><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-          <span className="text-[10px] font-medium mt-1">Home</span>
-        </Link>
-        <Link href="/groups" className="flex flex-col items-center p-2 text-black">
-          <div className="p-1"><Users size={24} strokeWidth={2.5} /></div>
-          <span className="text-[10px] font-medium mt-1">Groups</span>
-        </Link>
-        <Link href="/activity" className="flex flex-col items-center p-2 text-gray-400 hover:text-black transition-colors">
-          <div className="p-1"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-          <span className="text-[10px] font-medium mt-1">Activity</span>
-        </Link>
-        <Link href="/profile" className="flex flex-col items-center p-2 text-gray-400 hover:text-black transition-colors">
-          <div className="p-1">
-            <div className="w-6 h-6 rounded-full border-2 border-current overflow-hidden flex items-center justify-center bg-gray-100">
-              {session.user.image ? <img src={session.user.image} className="w-full h-full object-cover" alt=""/> : <span className="text-[10px] font-bold text-gray-500">{session.user.name?.charAt(0) || 'U'}</span>}
-            </div>
-          </div>
-          <span className="text-[10px] font-medium mt-1">Profile</span>
-        </Link>
-      </nav>
+      <BottomNav
+        activeTab="groups"
+        userImage={session.user.image}
+        userName={session.user.name}
+      />
     </div>
   )
 }

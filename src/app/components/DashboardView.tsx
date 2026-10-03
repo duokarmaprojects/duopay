@@ -7,6 +7,7 @@ import BalanceCards from "./BalanceCards"
 import { GroupIcon } from "@/components/ui/GroupIcon"
 import CashbackCard from "@/components/rewards/CashbackCard"
 import ReferralHeaderButton from "@/components/referrals/ReferralHeaderButton"
+import BottomNav from "@/components/navigation/BottomNav"
 
 type DashboardViewProps = {
   user: any
@@ -128,39 +129,12 @@ export default function DashboardView({
         )}
       </div>
 
-      {/* Bottom Navigation — Fixed Primary Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800 flex justify-between px-6 pb-[env(safe-area-inset-bottom,0px)] pt-2 z-20 transition-colors">
-        <Link href="/" className="flex flex-col items-center p-2 text-black dark:text-white">
-          <div className="p-1"><UserIcon size={24} strokeWidth={2.5} /></div>
-          <span className="text-[10px] font-medium mt-1">Home</span>
-        </Link>
-        <Link href="/groups" className="flex flex-col items-center p-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors">
-          <div className="p-1"><Users size={24} /></div>
-          <span className="text-[10px] font-medium mt-1">Groups</span>
-        </Link>
-        <Link href="/activity" className="flex flex-col items-center p-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors">
-          <div className="p-1"><Activity size={24} /></div>
-          <span className="text-[10px] font-medium mt-1">Activity</span>
-        </Link>
-        <Link href="/profile" className="flex flex-col items-center p-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors">
-          <div className="p-1">
-            <div className="w-6 h-6 rounded-full border-2 border-current overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-zinc-800">
-              {user?.image || sessionUser.image ? <img src={user?.image || sessionUser.image} className="w-full h-full object-cover" alt=""/> : <span className="text-[10px] font-bold text-gray-500">{user?.name?.charAt(0) || sessionUser.name?.charAt(0) || 'U'}</span>}
-            </div>
-          </div>
-          <span className="text-[10px] font-medium mt-1">Profile</span>
-        </Link>
-      </nav>
-
-      {/* Cashback & Rewards Section — Positioned below navigation area, reachable by scrolling */}
-      {cashbackSummary && (
-        <section
-          aria-label="DuoPay Rewards"
-          className="px-6 pt-2 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]"
-        >
-          <CashbackCard summary={cashbackSummary} />
-        </section>
-      )}
+      {/* Universal 5-section Bottom Navigation */}
+      <BottomNav
+        activeTab="home"
+        userImage={user?.image || sessionUser?.image}
+        userName={user?.name || sessionUser?.name}
+      />
     </div>
   )
 }

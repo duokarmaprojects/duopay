@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
 import Link from "next/link"
 import { 
-  User, Users, Activity, 
+  Users,
   LogOut, 
   PieChart, Receipt, CheckCircle2 
 } from "lucide-react"
@@ -15,6 +15,7 @@ import ProfileSections from "./ProfileSections"
 import { getUserSettings } from "@/actions/settings"
 import { getCashbackSummary } from "@/actions/cashback"
 import CashbackCard from "@/components/rewards/CashbackCard"
+import BottomNav from "@/components/navigation/BottomNav"
 
 export default async function ProfilePage() {
   const session = await auth()
@@ -156,28 +157,11 @@ export default async function ProfilePage() {
       </div>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 w-full max-w-md mx-auto bg-white border-t border-gray-100 flex justify-between px-6 pb-[env(safe-area-inset-bottom)] pt-2 z-20">
-        <Link href="/" className="flex flex-col items-center p-2 text-gray-400 hover:text-black transition-colors">
-          <div className="p-1"><User size={24} /></div>
-          <span className="text-[10px] font-medium mt-1">Home</span>
-        </Link>
-        <Link href="/groups" className="flex flex-col items-center p-2 text-gray-400 hover:text-black transition-colors">
-          <div className="p-1"><Users size={24} /></div>
-          <span className="text-[10px] font-medium mt-1">Groups</span>
-        </Link>
-        <Link href="/activity" className="flex flex-col items-center p-2 text-gray-400 hover:text-black transition-colors">
-          <div className="p-1"><Activity size={24} /></div>
-          <span className="text-[10px] font-medium mt-1">Activity</span>
-        </Link>
-        <Link href="/profile" className="flex flex-col items-center p-2 text-black">
-          <div className="p-1">
-            <div className="w-6 h-6 rounded-full border-2 border-current overflow-hidden flex items-center justify-center bg-gray-100">
-              {user?.image || session.user.image ? <img src={user?.image || session.user.image || undefined} className="w-full h-full object-cover" alt=""/> : <span className="text-[10px] font-bold text-gray-500">{user?.name?.charAt(0) || session.user.name?.charAt(0) || 'U'}</span>}
-            </div>
-          </div>
-          <span className="text-[10px] font-medium mt-1">Profile</span>
-        </Link>
-      </nav>
+      <BottomNav
+        activeTab="profile"
+        userImage={user?.image || session.user.image}
+        userName={user?.name || session.user.name}
+      />
     </div>
   )
 }
