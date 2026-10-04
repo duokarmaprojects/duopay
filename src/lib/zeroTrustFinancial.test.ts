@@ -576,4 +576,50 @@ describe("DUOPAY ZERO-TRUST FINANCIAL MANIPULATION HARDENING SUITE", () => {
     await expect(updateUserSettings(maliciousPayload)).rejects.toThrow()
     expect(prisma.userSettings.upsert).not.toHaveBeenCalled()
   })
+
+  // =========================================================================
+  // VECTOR W: OCR AMOUNT BYPASS ATTEMPT
+  // =========================================================================
+  it("Vector W: OCR metadata attempt to bypass mathematical reconciliation -> Rejected", async () => {
+    vi.mocked(prisma.groupMember.findMany).mockResolvedValue([
+      { userId: "user_alice" },
+      { userId: "user_bob" },
+    ] as any)
+
+    const formData = new FormData()
+    formData.set("groupId", "group-1")
+    formData.set("description", "OCR Scam")
+    formData.set("amount", "100") // 10,000 paise
+    formData.set("payerId", "user_alice")
+    formData.append("participants", "user_alice")
+    formData.append("participants", "user_bob")
+    formData.set("splitMethod", "EXACT")
+    formData.set("source", "RECEIPT")
+    // Attacker sends splitData that doesn't sum to amount!
+    formData.set("splitData", JSON.stringify({ user_alice: 2000, user_bob: 2000 }))
+
+    await expect(addExpense(formData)).rejects.toThrow("Total exact amounts (4000) do not sum up to the total expense amount (10000)")
+  })
+
+  // =========================================================================
+  // VECTOR X: OCR UNAUTHORIZED PARTICIPANT ATTEMPT
+  // =========================================================================
+  it("Vector X: OCR extraction specifies user ID not in group -> Rejected", async () => {
+    vi.mocked(prisma.groupMember.findMany).mockResolvedValue([
+      { userId: "user_alice" },
+      { userId: "user_bob" },
+    ] as any)
+
+    const formData = new FormData()
+    formData.set("groupId", "group-1")
+    formData.set("description", "Dinner")
+    formData.set("amount", "100") 
+    formData.set("payerId", "user_alice")
+    formData.append("participants", "user_alice")
+    formData.append("participants", "attacker_dave_not_in_group")
+    formData.set("splitMethod", "EQUAL")
+    formData.set("source", "RECEIPT")
+
+    await expect(addExpense(formData)).rejects.toThrow("Participant attacker_dave_not_in_group is not a member of this group")
+  })
 })

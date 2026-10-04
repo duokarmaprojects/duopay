@@ -10,12 +10,14 @@ import { checkActionRateLimit } from "@/lib/rateLimit"
 import { logSecurityEvent } from "@/lib/securityAudit"
 import { validateId, validateIntegerPaise } from "@/lib/security"
 import { sendNotification } from "@/services/notification"
+import { pusherServer } from "@/lib/realtime/pusher"
 
 const recordSettlementSchema = z.object({
   receiverId: z.string().min(1, "Receiver is required"),
   amountPaise: z.number().int().positive("Settlement amount must be positive"),
   groupId: z.string().optional().nullable(),
   idempotencyKey: z.string().optional().nullable(),
+  isPoolContribution: z.boolean().optional().default(false),
 })
 
 export async function recordSettlement(formData: FormData) {
@@ -93,6 +95,7 @@ export async function recordSettlement(formData: FormData) {
     amountPaise: validatedAmountPaise,
     groupId: rawGroupId ? String(rawGroupId) : null,
     idempotencyKey: rawIdempotencyKey ? String(rawIdempotencyKey) : null,
+    isPoolContribution: formData.get("isPoolContribution") === "true",
   })
 
   if (!parsed.success) {
@@ -104,7 +107,7 @@ export async function recordSettlement(formData: FormData) {
     throw new Error(parsed.error.issues[0].message)
   }
 
-  const { receiverId, amountPaise, groupId, idempotencyKey } = parsed.data
+  const { receiverId, amountPaise, groupId, idempotencyKey, isPoolContribution } = parsed.data
 
   // 1. Prevent payer paying themselves
   if (payerId === receiverId) {
@@ -219,6 +222,7 @@ export async function recordSettlement(formData: FormData) {
           idempotencyKey: effectiveIdempotencyKey,
           settledAt: new Date(),
           payeeUpiId: receiver.upiId || null,
+          isPoolContribution,
         },
       })
     })
@@ -267,6 +271,11 @@ export async function recordSettlement(formData: FormData) {
     url: groupId ? `/groups/${groupId}` : "/",
     data: { amountPaise, payerId, groupId },
   }).catch(() => {})
+
+  if (isPoolContribution && groupId) {
+    pusherServer.trigger(`group-${groupId}`, 'pool.updated', { groupId, amount: amountPaise, type: 'contribution' }).catch(() => {})
+    pusherServer.trigger(`group-${groupId}`, 'pool.contribution_created', { groupId, amount: amountPaise, payerId, receiverId }).catch(() => {})
+  }
 
   revalidatePath("/")
   if (groupId) {

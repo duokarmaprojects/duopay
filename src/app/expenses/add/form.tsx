@@ -19,7 +19,7 @@ import { getSmartExpenseSuggestions, ExpenseSuggestions } from "@/actions/sugges
 type Member = { id: string; name: string; image: string | null }
 type SplitMethod = "EQUAL" | "PERCENTAGE" | "EXACT" | "SHARES"
 
-export function AddExpenseForm({ groupId, members, currentUserId }: { groupId: string, members: Member[], currentUserId: string }) {
+export function AddExpenseForm({ groupId, members, currentUserId, source = 'MANUAL' }: { groupId: string, members: Member[], currentUserId: string, source?: string }) {
   const searchParams = useSearchParams()
   const [payerId, setPayerId] = useState(currentUserId)
   const [amountStr, setAmountStr] = useState(searchParams.get("amount") || "")
@@ -161,6 +161,7 @@ export function AddExpenseForm({ groupId, members, currentUserId }: { groupId: s
       <input type="hidden" name="splitMethod" value={splitMethod} />
       <input type="hidden" name="splitData" value={JSON.stringify(payloadSplitData)} />
       <input type="hidden" name="category" value={categoryId === "AUTO" ? getExpenseCategory(description) : categoryId} />
+      <input type="hidden" name="source" value={source} />
       
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">

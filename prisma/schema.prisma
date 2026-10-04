@@ -1,6 +1,7 @@
 generator client {
-  provider        = "prisma-client-js"
+  provider = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
+  
 }
 
 datasource db {
@@ -81,6 +82,17 @@ model Group {
   name        String
   image       String?
   idempotencyKey String? @unique
+
+  // Phase B: Trip & Collection Extensions
+  type        String   @default("GROUP") // GROUP, TRIP, COLLECTION
+  destination String?  
+  startDate   DateTime?
+  endDate     DateTime?
+  targetAmount Int?    // in paise
+  deadline    DateTime?
+  poolOwnerId String?  // ID of the user holding the pool money (for trips/collections)
+  status      String   @default("ACTIVE") // ACTIVE, TARGET_REACHED, EXPIRED, CLOSED
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -107,10 +119,17 @@ model Expense {
   groupId     String?  
   description String
   category    String?
-  amount      Int      // In paise! (e.g., ₹100.50 = 10050)
+  amount      Int      // In paise! (e.g., 1100.50 = 10050)
   date        DateTime @default(now())
   payerId     String
   splitMethod String   @default("EQUAL") // V1 only EQUAL
+  source      String   @default("MANUAL") // MANUAL, CASH, RECEIPT, SCREENSHOT, IMPORT, SHARE
+  receiptUrl  String?
+  metadata    String?  // JSON string
+  isPoolExpense  Boolean @default(false)
+  priority      String   @default("NORMAL")
+  dueDate       DateTime?
+  reminderAt    DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   idempotencyKey String? @unique
@@ -119,6 +138,20 @@ model Expense {
   payer       User     @relation(fields: [payerId], references: [id], onDelete: Restrict)
   
   participants ExpenseParticipant[]
+  receiptItems ReceiptItem[]
+}
+
+model ReceiptItem {
+  id          String   @id @default(cuid())
+  expenseId   String
+  name        String
+  price       Int      // paise
+  quantity    Int      @default(1)
+  assignedTo  String?  // JSON array of user IDs, or null for split equally
+
+  expense     Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  @@index([expenseId])
 }
 
 model ExpenseParticipant {
@@ -153,6 +186,7 @@ model Settlement {
   settledAt             DateTime?
   payeeUpiId            String?
   note                  String?
+  isPoolContribution    Boolean   @default(false)
   reportedAt            DateTime  @default(now())
   createdAt             DateTime  @default(now())
   idempotencyKey        String?   @unique
@@ -365,6 +399,7 @@ model RecurringExpense {
   @@index([nextOccurrence, status])
   @@index([payerId])
 }
+
 
 
 

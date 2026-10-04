@@ -18,6 +18,11 @@ export default async function GroupsPage() {
             include: {
               _count: {
                 select: { members: true }
+              },
+              expenses: {
+                select: {
+                  amount: true
+                }
               }
             }
           }
@@ -39,12 +44,22 @@ export default async function GroupsPage() {
         netAmount += amount as number
       }
 
+      const totalSpent = group.expenses.reduce((sum, exp) => sum + exp.amount, 0)
+
       return {
         id: group.id,
         name: group.name,
         image: group.image,
+        type: group.type,
+        destination: group.destination,
+        startDate: group.startDate?.toISOString(),
+        endDate: group.endDate?.toISOString(),
+        targetAmount: group.targetAmount,
+        deadline: group.deadline?.toISOString(),
+        poolOwnerId: group.poolOwnerId,
         memberCount: group._count.members,
-        netAmount
+        netAmount,
+        totalSpent
       }
     })
   )
@@ -52,7 +67,7 @@ export default async function GroupsPage() {
   return (
     <div className="flex flex-col flex-1 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="flex-1 overflow-y-auto">
-        <GroupsListClient groups={groupsData} />
+        <GroupsListClient groups={groupsData as any} />
       </div>
 
       <BottomNav

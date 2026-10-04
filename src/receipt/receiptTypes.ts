@@ -15,5 +15,5 @@ export interface ExtractedReceipt {
 }
 
 export interface ReceiptExtractor {
-  extract(file: File): Promise<ExtractedReceipt>;
+  extract(file: File, mode?: 'scan' | 'screenshot'): Promise<ExtractedReceipt>;
 }

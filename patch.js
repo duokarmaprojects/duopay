@@ -1,0 +1,16 @@
+const { createClient } = require('@libsql/client');
+const client = createClient({ url: 'file:./prisma/dev.db' });
+client.execute('ALTER TABLE Group ADD COLUMN type TEXT DEFAULT ''GROUP''').catch(console.log);
+client.execute('ALTER TABLE Group ADD COLUMN destination TEXT').catch(console.log);
+client.execute('ALTER TABLE Group ADD COLUMN startDate DATETIME').catch(console.log);
+client.execute('ALTER TABLE Group ADD COLUMN endDate DATETIME').catch(console.log);
+client.execute('ALTER TABLE Group ADD COLUMN targetAmount INTEGER').catch(console.log);
+client.execute('ALTER TABLE Group ADD COLUMN deadline DATETIME').catch(console.log);
+client.execute('ALTER TABLE Group ADD COLUMN poolOwnerId TEXT').catch(console.log);
+client.execute('ALTER TABLE Group ADD COLUMN status TEXT DEFAULT ''ACTIVE''').catch(console.log);
+client.execute('ALTER TABLE Expense ADD COLUMN isPoolExpense BOOLEAN DEFAULT 0').catch(console.log);
+client.execute('ALTER TABLE Expense ADD COLUMN priority TEXT DEFAULT ''NORMAL''').catch(console.log);
+client.execute('ALTER TABLE Expense ADD COLUMN dueDate DATETIME').catch(console.log);
+client.execute('ALTER TABLE Expense ADD COLUMN reminderAt DATETIME').catch(console.log);
+client.execute('ALTER TABLE Settlement ADD COLUMN isPoolContribution BOOLEAN DEFAULT 0').catch(console.log);
+console.log('Columns added');

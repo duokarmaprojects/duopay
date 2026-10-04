@@ -103,36 +103,56 @@ export default async function AddExpensePage({
           <h1 className="text-xl font-bold ml-2 text-gray-900 dark:text-zinc-100">Add Expense</h1>
         </header>
 
-        <div className="flex-1 p-6 flex flex-col justify-center items-center gap-6 max-w-md mx-auto w-full">
+        <div className="flex-1 p-6 flex flex-col justify-center items-center gap-4 max-w-sm mx-auto w-full">
           <Link 
             href={`/expenses/add?groupId=${groupId}&mode=scan`}
-            className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-8 shadow-sm active:scale-[0.98] transition-transform flex flex-col items-center gap-4 hover:border-blue-500/30 dark:hover:border-blue-500/30 hover:shadow-blue-500/5 group"
+            className="w-full flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-3xl shadow-sm hover:shadow-md hover:border-emerald-500/30 transition-all group"
           >
-            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-950/50 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
-              <Scan size={32} strokeWidth={2} />
+            <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Scan size={28} />
             </div>
-            <div className="text-center">
-              <h2 className="font-bold text-gray-900 dark:text-zinc-100 text-xl tracking-tight mb-1">Scan Receipt</h2>
-              <p className="text-sm font-medium text-gray-500 dark:text-zinc-400">Extract items automatically</p>
+            <div>
+              <h3 className="font-bold text-lg text-gray-900 dark:text-zinc-100 tracking-tight">Scan Receipt</h3>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 leading-snug">AI extracts items & totals</p>
             </div>
           </Link>
 
-          <div className="flex items-center w-full max-w-[200px]">
-            <div className="flex-1 border-t border-gray-200 dark:border-zinc-800"></div>
-            <span className="px-4 text-[10px] text-gray-400 dark:text-zinc-500 font-bold uppercase tracking-widest">Or</span>
-            <div className="flex-1 border-t border-gray-200 dark:border-zinc-800"></div>
-          </div>
+          <Link 
+            href={`/expenses/add?groupId=${groupId}&mode=screenshot`}
+            className="w-full flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-3xl shadow-sm hover:shadow-md hover:border-purple-500/30 transition-all group"
+          >
+            <div className="w-14 h-14 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-gray-900 dark:text-zinc-100 tracking-tight">Payment Screenshot</h3>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 leading-snug">Import from GPay, PhonePe...</p>
+            </div>
+          </Link>
+
+          <Link 
+            href={`/expenses/add?groupId=${groupId}&mode=cash`}
+            className="w-full flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-3xl shadow-sm hover:shadow-md hover:border-amber-500/30 transition-all group"
+          >
+            <div className="w-14 h-14 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-gray-900 dark:text-zinc-100 tracking-tight">Cash Expense</h3>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 leading-snug">Log offline physical cash</p>
+            </div>
+          </Link>
 
           <Link 
             href={`/expenses/add?groupId=${groupId}&mode=manual`}
-            className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl p-8 shadow-sm active:scale-[0.98] transition-transform flex flex-col items-center gap-4 hover:border-blue-500/30 dark:hover:border-blue-500/30 hover:shadow-blue-500/5 group"
+            className="w-full flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-3xl shadow-sm hover:shadow-md hover:border-blue-500/30 transition-all group"
           >
-            <div className="w-16 h-16 bg-gray-50 dark:bg-zinc-800 rounded-2xl flex items-center justify-center text-gray-700 dark:text-zinc-300 group-hover:scale-110 transition-transform">
-              <PencilLine size={32} strokeWidth={2} />
+            <div className="w-14 h-14 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <PencilLine size={28} />
             </div>
-            <div className="text-center">
-              <h2 className="font-bold text-gray-900 dark:text-zinc-100 text-xl tracking-tight mb-1">Enter Manually</h2>
-              <p className="text-sm font-medium text-gray-500 dark:text-zinc-400">Add expense details yourself</p>
+            <div>
+              <h3 className="font-bold text-lg text-gray-900 dark:text-zinc-100 tracking-tight">Manual Entry</h3>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 leading-snug">Type details yourself</p>
             </div>
           </Link>
         </div>
@@ -147,15 +167,17 @@ export default async function AddExpensePage({
           <ArrowLeft size={24} />
         </Link>
         <h1 className="text-xl font-bold ml-2 text-gray-900 dark:text-zinc-100 tracking-tight">
-          {mode === 'scan' ? 'Scan Receipt' : 'Add Expense'}
+          {mode === 'scan' ? 'Scan Receipt' : 
+           mode === 'screenshot' ? 'Process Screenshot' : 
+           mode === 'cash' ? 'Add Cash Expense' : 'Add Expense'}
         </h1>
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        {mode === 'scan' ? (
-          <ReceiptScanner groupId={groupId} members={members} currentUserId={session.user.id} />
+        {mode === 'scan' || mode === 'screenshot' ? (
+          <ReceiptScanner groupId={groupId} members={members} currentUserId={session.user.id} mode={mode} />
         ) : (
-          <AddExpenseForm groupId={groupId} members={members} currentUserId={session.user.id} />
+          <AddExpenseForm groupId={groupId} members={members} currentUserId={session.user.id} source={mode === 'cash' ? 'CASH' : 'MANUAL'} />
         )}
       </div>
     </div>

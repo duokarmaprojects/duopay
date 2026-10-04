@@ -16,7 +16,7 @@ const prismaClientSingleton = () => {
     return new PrismaClient({ adapter })
   }
 
-  return new PrismaClient()
+  return new PrismaClient({ datasources: { db: { url } } })
 }
 
 type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>

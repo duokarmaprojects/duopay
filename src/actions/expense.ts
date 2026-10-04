@@ -25,7 +25,14 @@ const addExpenseSchema = z.object({
   participantIds: z.array(z.string()).min(1, "At least one participant required"),
   splitMethod: z.enum(["EQUAL", "PERCENTAGE", "EXACT", "SHARES"]).default("EQUAL"),
   splitData: z.string().optional(),
-  category: z.string().optional()
+  category: z.string().optional(),
+  source: z.string().optional().default("MANUAL"),
+  receiptUrl: z.string().optional(),
+  metadata: z.string().optional(),
+  receiptItems: z.string().optional(), // JSON string for receipt items array
+  isPoolExpense: z.boolean().optional().default(false),
+  priority: z.string().optional().default("NORMAL"),
+  dueDate: z.date().optional().nullable(),
 })
 
 export async function addExpense(formData: FormData) {
@@ -85,6 +92,10 @@ export async function addExpense(formData: FormData) {
   const splitMethod = (formData.get("splitMethod") as string || "EQUAL") as "EQUAL" | "PERCENTAGE" | "EXACT" | "SHARES"
   const splitDataStr = formData.get("splitData") as string || "{}"
   const rawCategory = formData.get("category") as string || "OTHER"
+  const isPoolExpense = formData.get("isPoolExpense") === "true"
+  const priority = formData.get("priority") as string || "NORMAL"
+  const rawDueDate = formData.get("dueDate") as string
+  const dueDate = rawDueDate ? new Date(rawDueDate) : null
 
   // Payer authorization: user cannot record an expense on behalf of another user as payer
   if (rawPayerId !== userId) {
@@ -114,7 +125,14 @@ export async function addExpense(formData: FormData) {
     participantIds,
     splitMethod,
     splitData: splitDataStr,
-    category
+    category,
+    source: (formData.get("source") as string) || "MANUAL",
+    receiptUrl: (formData.get("receiptUrl") as string) || undefined,
+    metadata: (formData.get("metadata") as string) || undefined,
+    receiptItems: (formData.get("receiptItems") as string) || undefined,
+    isPoolExpense,
+    priority,
+    dueDate,
   })
 
   if (!parsed.success) {
@@ -223,7 +241,7 @@ export async function addExpense(formData: FormData) {
 
   // Create Expense and Participants transactionally with DB-level idempotency protection
   try {
-    await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx) => {
       const expense = await tx.expense.create({
         data: {
           groupId: data.groupId,
@@ -233,6 +251,12 @@ export async function addExpense(formData: FormData) {
           splitMethod: data.splitMethod,
           category: data.category,
           idempotencyKey,
+          source: data.source,
+          receiptUrl: data.receiptUrl,
+          metadata: data.metadata,
+          isPoolExpense: data.isPoolExpense,
+          priority: data.priority,
+          dueDate: data.dueDate,
         },
       })
 
@@ -245,6 +269,25 @@ export async function addExpense(formData: FormData) {
       await tx.expenseParticipant.createMany({
         data: participantsData
       })
+
+      if (data.receiptItems) {
+        try {
+          const items = JSON.parse(data.receiptItems);
+          if (Array.isArray(items) && items.length > 0) {
+            await tx.receiptItem.createMany({
+              data: items.map((item: any) => ({
+                expenseId: expense.id,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity || 1,
+                assignedTo: item.assignedTo ? JSON.stringify(item.assignedTo) : null
+              }))
+            });
+          }
+        } catch (e) {
+          console.error("Failed to parse receipt items", e);
+        }
+      }
     })
   } catch (err: any) {
     if (err?.code === "P2002" || String(err?.message || "").includes("idempotencyKey")) {

@@ -15,7 +15,13 @@ import { sendNotification } from "@/services/notification"
 
 const createGroupSchema = z.object({
   name: z.string().min(1, "Group name is required").max(50, "Group name is too long"),
-  image: z.string().optional()
+  image: z.string().optional(),
+  type: z.enum(["GROUP", "TRIP", "COLLECTION"]).default("GROUP"),
+  destination: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  targetAmount: z.number().int().nonnegative().optional(),
+  deadline: z.string().optional(),
 })
 
 export async function createGroup(formData: FormData) {
@@ -44,11 +50,28 @@ export async function createGroup(formData: FormData) {
   const rawName = formData.get("name") as string
   const rawImage = formData.get("image") as string | undefined
   const idempotencyKey = formData.get("idempotencyKey") as string | undefined
+  
+  const type = formData.get("type") as "GROUP" | "TRIP" | "COLLECTION" | null
+  const destination = formData.get("destination") as string | undefined
+  const startDateStr = formData.get("startDate") as string | undefined
+  const endDateStr = formData.get("endDate") as string | undefined
+  const targetAmountStr = formData.get("targetAmount") as string | undefined
+  const deadlineStr = formData.get("deadline") as string | undefined
 
   const name = sanitizeTextInput(rawName, 50)
-  const image = rawImage ? sanitizeTextInput(rawImage, 50) : undefined
+  const image = rawImage ? sanitizeTextInput(rawImage, 255) : undefined
 
-  const parsed = createGroupSchema.safeParse({ name, image })
+  const parsed = createGroupSchema.safeParse({ 
+    name, 
+    image,
+    type: type || "GROUP",
+    destination: destination ? sanitizeTextInput(destination, 50) : undefined,
+    startDate: startDateStr || undefined,
+    endDate: endDateStr || undefined,
+    targetAmount: targetAmountStr ? parseInt(targetAmountStr, 10) : undefined,
+    deadline: deadlineStr || undefined
+  })
+  
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0].message)
   }
@@ -80,6 +103,13 @@ export async function createGroup(formData: FormData) {
       data: {
         name: parsed.data.name,
         image: parsed.data.image,
+        type: parsed.data.type,
+        destination: parsed.data.destination,
+        startDate: parsed.data.startDate ? new Date(parsed.data.startDate) : null,
+        endDate: parsed.data.endDate ? new Date(parsed.data.endDate) : null,
+        targetAmount: parsed.data.targetAmount,
+        deadline: parsed.data.deadline ? new Date(parsed.data.deadline) : null,
+        poolOwnerId: parsed.data.type === "COLLECTION" || parsed.data.type === "TRIP" ? userId : null,
         idempotencyKey: idempotencyKey || null,
         members: {
           create: {

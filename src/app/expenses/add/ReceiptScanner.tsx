@@ -11,7 +11,7 @@ type Member = { id: string; name: string; image: string | null }
 
 type Step = "IDLE" | "EXTRACTING" | "REVIEW" | "ASSIGN"
 
-export function ReceiptScanner({ groupId, members, currentUserId }: { groupId: string, members: Member[], currentUserId: string }) {
+export function ReceiptScanner({ groupId, members, currentUserId, mode = 'scan' }: { groupId: string, members: Member[], currentUserId: string, mode?: string }) {
   const [step, setStep] = useState<Step>("IDLE")
   const [receipt, setReceipt] = useState<ExtractedReceipt | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -37,7 +37,7 @@ export function ReceiptScanner({ groupId, members, currentUserId }: { groupId: s
     
     try {
       const extractor = getReceiptExtractor()
-      const data = await extractor.extract(file)
+      const data = await extractor.extract(file, mode as 'scan' | 'screenshot')
       setReceipt(data)
       
       // Initialize edit states
@@ -404,10 +404,16 @@ export function ReceiptScanner({ groupId, members, currentUserId }: { groupId: s
 
             <form action={addExpense}>
               <input type="hidden" name="groupId" value={groupId} />
-              <input type="hidden" name="description" value={merchant || "Receipt Scan"} />
+              <input type="hidden" name="description" value={merchant || (mode === 'screenshot' ? 'Screenshot Import' : 'Receipt Scan')} />
               <input type="hidden" name="amount" value={totalInr} />
               <input type="hidden" name="payerId" value={payerId} />
               <input type="hidden" name="splitMethod" value="EXACT" />
+              <input type="hidden" name="source" value={mode === 'screenshot' ? 'SCREENSHOT' : 'RECEIPT'} />
+              <input type="hidden" name="receiptItems" value={JSON.stringify(items.map(i => ({ 
+                name: i.name, 
+                price: i.amountPaise, 
+                assignedTo: Array.from(itemAssignments[i.id] || []) 
+              })))} />
               {/* Prepare participants and exact split data for server action */}
               {members.map(m => (
                 finalShares[m.id] > 0 && <input key={`p_${m.id}`} type="hidden" name="participants" value={m.id} />
