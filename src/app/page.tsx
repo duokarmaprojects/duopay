@@ -32,10 +32,16 @@ export default async function HomePage() {
     redirect('/setup-profile')
   }
 
-  const [{ totalOwedToUser, totalUserOwes, detailedBalances }, cashbackSummary, unreadNotificationCount] = await Promise.all([
+  const [{ totalOwedToUser, totalUserOwes, detailedBalances }, cashbackSummary, unreadNotificationCount, recentExpenses] = await Promise.all([
     getUserBalances(session.user.id),
     getCashbackSummary(),
     prisma.notification.count({ where: { userId: session.user.id, readAt: null } }),
+    prisma.expense.findMany({
+      where: { participants: { some: { userId: session.user.id } } },
+      include: { group: true, participants: true, payer: true },
+      orderBy: { date: 'desc' },
+      take: 5
+    })
   ])
 
   return (
@@ -47,6 +53,7 @@ export default async function HomePage() {
       detailedBalances={detailedBalances as any}
       cashbackSummary={cashbackSummary}
       unreadNotificationCount={unreadNotificationCount}
+      recentExpenses={recentExpenses}
     />
   )
 }

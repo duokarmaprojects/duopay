@@ -27,24 +27,10 @@ export default function GroupSmartSettleButton({ groupId }: { groupId: string })
     <>
       <button
         onClick={handleOpen}
-        className="w-full mt-3 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent hover:from-amber-500/25 border border-amber-500/30 rounded-xl p-2.5 flex items-center justify-between text-left transition-all active:scale-[0.99] group shadow-xs"
+        className="flex items-center gap-1.5 bg-amber-100/50 hover:bg-amber-100 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-colors border border-amber-200/50 dark:border-amber-800/50"
       >
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-400 flex items-center justify-center">
-            <Sparkles size={15} />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-1.5">
-              Smart Settle Group
-              <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full">
-                Simplify
-              </span>
-            </p>
-          </div>
-        </div>
-        <span className="text-xs font-bold text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform mr-1">
-          Review →
-        </span>
+        <Sparkles size={14} />
+        Smart Settle
       </button>
 
       <SmartSettleModal

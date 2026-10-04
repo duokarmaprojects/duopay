@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Activity, CheckCircle2, UserPlus, Users, ShieldCheck, ChevronRight } from "lucide-react"
+import { Activity, CheckCircle2, UserPlus, Users, ShieldCheck, ChevronRight, ArrowUpRight, ArrowDownRight } from "lucide-react"
 import Link from "next/link"
 import { ExpenseIcon } from "@/components/expenses/ExpenseIcon"
 
@@ -61,17 +61,17 @@ export default function ActivityFeed({ activities }: Props) {
   if (activities.length === 0) {
     return (
       <div className="p-6 pt-4 flex justify-center">
-        <div className="bg-white rounded-3xl p-8 text-center border border-gray-100 shadow-xs w-full max-w-sm">
-          <div className="w-14 h-14 bg-gray-100 text-gray-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 text-center border border-gray-100 dark:border-zinc-800 shadow-sm w-full max-w-sm">
+          <div className="w-14 h-14 bg-gray-100 dark:bg-zinc-800 text-gray-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Activity size={26} />
           </div>
-          <h3 className="font-bold text-gray-900 text-base mb-1">No activity yet</h3>
-          <p className="text-xs text-gray-500 mb-4 px-2">
+          <h3 className="font-bold text-gray-900 dark:text-zinc-100 text-base mb-1">No activity yet</h3>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 mb-4 px-2">
             Expenses, settlements, and member updates will appear here automatically.
           </p>
           <Link
             href="/"
-            className="inline-block bg-black text-white px-5 py-2.5 rounded-xl text-xs font-bold active:scale-95 transition-all"
+            className="inline-block bg-black dark:bg-white text-white dark:text-black px-5 py-2.5 rounded-xl text-xs font-bold active:scale-95 transition-all"
           >
             Go to Dashboard
           </Link>
@@ -91,16 +91,20 @@ export default function ActivityFeed({ activities }: Props) {
   const grouped = groupActivitiesByDate(paginated)
   const hasMore = visibleCount < filtered.length
 
+  const formatMoney = (amountInPaise: number) => {
+    return `₹${(amountInPaise / 100).toFixed(2)}`
+  }
+
   return (
-    <div className="p-4 sm:p-6 pt-2 pb-24">
+    <div className="p-5 pt-2 pb-24 font-sans">
       {/* Category Filter Chips */}
-      <div className="flex items-center gap-1.5 mb-5 overflow-x-auto pb-1 scrollbar-none">
+      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1 scrollbar-none">
         {(
           [
-            { id: "ALL", label: "All" },
+            { id: "ALL", label: "All Activity" },
             { id: "EXPENSES", label: "Expenses" },
             { id: "SETTLEMENTS", label: "Settlements" },
-            { id: "PEOPLE", label: "People & Groups" },
+            { id: "PEOPLE", label: "Groups & Friends" },
           ] as const
         ).map((f) => (
           <button
@@ -109,10 +113,10 @@ export default function ActivityFeed({ activities }: Props) {
               setFilter(f.id)
               setVisibleCount(ITEMS_PER_PAGE)
             }}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors active:scale-95 ${
               filter === f.id
-                ? "bg-black text-white"
-                : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-100"
+                ? "bg-black dark:bg-white text-white dark:text-black"
+                : "bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800"
             }`}
           >
             {f.label}
@@ -121,118 +125,112 @@ export default function ActivityFeed({ activities }: Props) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-12 text-xs text-gray-400">
+        <div className="text-center py-12 text-sm text-gray-400 dark:text-zinc-500 font-medium">
           No items match the selected filter.
         </div>
       ) : (
         /* Timeline Feed */
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-8">
           {Object.entries(grouped).map(([dateLabel, items]) => (
             <div key={dateLabel}>
-              <h2 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2.5 px-1">
+              <h2 className="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-3 px-1">
                 {dateLabel}
               </h2>
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-3">
                 {items.map((item) => {
                   const isVerifiedPayment =
                     item.paymentStatus === "PROVIDER_VERIFIED" ||
                     item.paymentStatus === "WEBHOOK_VERIFIED"
 
+                  const isMoneyComing = (item.type === "SETTLEMENT" && !item.isUserPayer)
+                  const isMoneyGoing = (item.type === "SETTLEMENT" && item.isUserPayer)
+                  // For expenses, if you paid, others owe you (technically money went out but you get owed).
+                  // Let's keep expense neutral but show amount.
+
                   return (
                     <div
                       key={item.id}
-                      className="bg-white rounded-2xl p-4 border border-gray-100 shadow-xs flex items-center gap-3.5"
+                      className="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-gray-100 dark:border-zinc-800 shadow-sm flex items-center gap-4 active:scale-[0.98] transition-transform cursor-default"
                     >
                       {item.type === "EXPENSE" ? (
                         <ExpenseIcon
                           category={item.category}
                           description={item.description}
-                          className="w-10 h-10 rounded-2xl shrink-0"
+                          className="w-12 h-12 rounded-xl shrink-0"
                         />
                       ) : item.type === "SETTLEMENT" ? (
                         <div
-                          className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-                            isVerifiedPayment
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-blue-50 text-blue-600"
+                          className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                            isMoneyComing
+                              ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-500"
+                              : "bg-red-100 text-red-600 dark:bg-red-950/30 dark:text-red-500"
                           }`}
                         >
-                          {isVerifiedPayment ? <ShieldCheck size={20} /> : <CheckCircle2 size={18} />}
+                          {isMoneyComing ? <ArrowDownRight size={24} /> : <ArrowUpRight size={24} />}
                         </div>
                       ) : item.type === "FRIEND_ADDED" ? (
-                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-purple-50 text-purple-600">
-                          <UserPlus size={18} />
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-purple-100 text-purple-600 dark:bg-purple-950/30 dark:text-purple-500">
+                          <UserPlus size={24} />
                         </div>
                       ) : (
-                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
-                          <Users size={18} />
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-blue-100 text-blue-600 dark:bg-blue-950/30 dark:text-blue-500">
+                          <Users size={24} />
                         </div>
                       )}
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="font-semibold text-gray-900 text-sm truncate">
+                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                          <p className="font-bold text-gray-900 dark:text-zinc-100 text-sm truncate">
                             {item.type === "EXPENSE" ? (
-                              <>
-                                {item.isUserPayer ? "You" : item.payerName} paid{" "}
-                                <span className="font-bold text-gray-900">
-                                  ₹{item.amount / 100}
-                                </span>
-                              </>
+                              item.description
                             ) : item.type === "SETTLEMENT" ? (
-                              <>
-                                {item.isUserPayer ? "You" : item.payerName} settled{" "}
-                                <span className="font-bold text-gray-900">
-                                  ₹{item.amount / 100}
-                                </span>
-                              </>
+                              isMoneyComing ? "Payment received" : "Payment sent"
                             ) : (
-                              <span>{item.description}</span>
+                              item.description
                             )}
                           </p>
 
-                          {isVerifiedPayment && (
-                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full shrink-0">
-                              Verified
+                          {item.amount > 0 && (
+                            <span className={`font-black text-sm shrink-0 ${
+                              item.type === 'SETTLEMENT' 
+                                ? (isMoneyComing ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-900 dark:text-zinc-100')
+                                : 'text-gray-900 dark:text-zinc-100'
+                            }`}>
+                              {item.type === 'SETTLEMENT' && isMoneyComing ? '+' : ''}{formatMoney(item.amount)}
                             </span>
                           )}
                         </div>
 
-                        {item.type === "EXPENSE" && (
-                          <p className="text-xs text-gray-500 mt-0.5 truncate">
-                            {item.description}{" "}
-                            {item.groupName && (
-                              <span className="text-gray-400">• {item.groupName}</span>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">
+                            {item.type === "EXPENSE" && (
+                              <>{item.isUserPayer ? "You paid" : `${item.payerName} paid`} • {item.groupName || 'No group'}</>
+                            )}
+                            {item.type === "SETTLEMENT" && (
+                              <>
+                                {isMoneyComing ? `From ${item.payerName}` : `To ${item.receiverName}`}
+                                {item.groupName && ` • ${item.groupName}`}
+                              </>
+                            )}
+                            {(item.type === "FRIEND_ADDED" || item.type === "GROUP_JOINED") && (
+                              "System Event"
                             )}
                           </p>
-                        )}
-
-                        {item.type === "SETTLEMENT" && (
-                          <p className="text-xs text-gray-500 mt-0.5 truncate">
-                            With {item.isUserPayer ? item.receiverName : "you"}{" "}
-                            {item.groupName && (
-                              <span className="text-gray-400">• {item.groupName}</span>
-                            )}
+                          <p className="text-[10px] font-medium text-gray-400 dark:text-zinc-500 shrink-0">
+                            {new Date(item.date).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </p>
-                        )}
+                        </div>
 
-                        <p className="text-[10px] text-gray-400 mt-1 font-mono">
-                          {new Date(item.date).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
+                        {isVerifiedPayment && (
+                          <div className="mt-2 inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-500 px-2 py-0.5 rounded-md text-[10px] font-bold">
+                            <ShieldCheck size={12} />
+                            Verified
+                          </div>
+                        )}
                       </div>
-
-                      {item.groupId && (
-                        <Link
-                          href={`/groups/${item.groupId}`}
-                          className="p-1.5 text-gray-300 hover:text-gray-600 rounded-lg shrink-0"
-                          title="View Group"
-                        >
-                          <ChevronRight size={18} />
-                        </Link>
-                      )}
                     </div>
                   )
                 })}
@@ -242,10 +240,10 @@ export default function ActivityFeed({ activities }: Props) {
 
           {/* Load More Pagination */}
           {hasMore && (
-            <div className="text-center pt-2">
+            <div className="text-center pt-4">
               <button
                 onClick={() => setVisibleCount((prev) => prev + ITEMS_PER_PAGE)}
-                className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-xs"
+                className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 px-6 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm"
               >
                 Load More Activities ({filtered.length - visibleCount} remaining)
               </button>

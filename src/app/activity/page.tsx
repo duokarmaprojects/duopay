@@ -132,11 +132,11 @@ export default async function ActivityPage({
   activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   return (
-    <div className="flex flex-col flex-1 bg-gray-50 pb-20 min-h-screen">
-      <header className="bg-white/80 backdrop-blur-md px-6 pt-10 pb-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10">
+    <div className="flex flex-col flex-1 bg-gray-50 dark:bg-zinc-950 pb-20 min-h-screen">
+      <header className="bg-gray-50/80 dark:bg-zinc-950/80 backdrop-blur-md px-5 pt-8 pb-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between sticky top-0 z-10">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Activity</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Real-time timeline of expenses, settlements & events</p>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Activity</h1>
+          <p className="text-sm font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Your financial timeline</p>
         </div>
       </header>
 
