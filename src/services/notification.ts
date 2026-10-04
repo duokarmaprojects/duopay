@@ -24,9 +24,13 @@ function cleanupDedupCache() {
  * Configure VAPID details if environment variables are provided.
  */
 function getVapidDetails() {
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-  const privateKey = process.env.VAPID_PRIVATE_KEY
-  const subject = process.env.VAPID_SUBJECT || "mailto:support@duopay.local"
+  const rawPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim()
+  const rawPrivate = process.env.VAPID_PRIVATE_KEY?.trim()
+  const rawSubject = process.env.VAPID_SUBJECT?.trim()
+
+  const publicKey = rawPublic ? rawPublic.replace(/^['"]|['"]$/g, '') : undefined
+  const privateKey = rawPrivate ? rawPrivate.replace(/^['"]|['"]$/g, '') : undefined
+  const subject = rawSubject ? rawSubject.replace(/^['"]|['"]$/g, '') : "mailto:support@duopay.app"
 
   if (!publicKey || !privateKey) {
     return null

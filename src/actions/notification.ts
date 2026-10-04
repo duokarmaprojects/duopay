@@ -21,7 +21,8 @@ const subscribePushSchema = z.object({
  * Safe to expose to the browser; VAPID_PRIVATE_KEY remains strictly secret server-side.
  */
 export async function getVapidPublicKey(): Promise<{ publicKey: string | null; isSupported: boolean }> {
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || null
+  const rawKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim()
+  const publicKey = rawKey ? rawKey.replace(/^['"]|['"]$/g, '') : null
   return {
     publicKey,
     isSupported: Boolean(publicKey),
