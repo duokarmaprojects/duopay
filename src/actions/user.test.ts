@@ -17,6 +17,9 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    automationRule: { findMany: async () => [] },
+    merchantAlias: { findUnique: async () => null },
+    merchant: { findFirst: async () => null, create: async () => null, findUnique: async () => null },
     user: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -109,3 +112,5 @@ describe("Server-Side UPI ID Management (user.ts)", () => {
     )
   })
 })
+
+

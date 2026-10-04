@@ -11,6 +11,9 @@ vi.mock("@/lib/auth", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    automationRule: { findMany: async () => [] },
+    merchantAlias: { findUnique: async () => null },
+    merchant: { findFirst: async () => null, create: async () => null, findUnique: async () => null },
     user: { findUnique: vi.fn(), findMany: vi.fn() },
     expense: { findMany: vi.fn() },
     settlement: { findMany: vi.fn() },
@@ -151,3 +154,5 @@ describe("Phase 4-7 Production Audit Security Suite", () => {
     })
   })
 })
+
+

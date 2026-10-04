@@ -361,6 +361,9 @@ export async function generateDueRecurringExpenses(groupId?: string) {
               category: item.category,
               idempotencyKey,
               date: item.nextOccurrence,
+              dueDate: item.nextOccurrence,
+              reminderAt: item.nextOccurrence,
+              status: "UPCOMING",
             },
           })
 

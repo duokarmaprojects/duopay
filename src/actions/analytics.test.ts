@@ -10,6 +10,9 @@ vi.mock("@/lib/auth", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    automationRule: { findMany: async () => [] },
+    merchantAlias: { findUnique: async () => null },
+    merchant: { findFirst: async () => null, create: async () => null, findUnique: async () => null },
     groupMember: { findMany: vi.fn() },
     friendship: { findMany: vi.fn() },
     expense: { findMany: vi.fn() },
@@ -137,3 +140,5 @@ describe("Phase 2 Retention Suite: Search & Analytics", () => {
     })
   })
 })
+
+

@@ -146,7 +146,7 @@ export async function getUserBalances(userId: string): Promise<UserBalanceSummar
  */
 export async function getGroupBalances(groupId: string, sessionUserId?: string) {
   const expenses = await prisma.expense.findMany({
-    where: { groupId },
+    where: { groupId, status: "FINAL" },
     include: { participants: true }
   })
 

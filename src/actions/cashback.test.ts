@@ -40,6 +40,9 @@ vi.mock("@/services/balance", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    automationRule: { findMany: async () => [] },
+    merchantAlias: { findUnique: async () => null },
+    merchant: { findFirst: async () => null, create: async () => null, findUnique: async () => null },
     user: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
@@ -608,3 +611,5 @@ describe("CASHBACK & REWARDS SECURITY & INTEGRITY AUDIT SUITE", () => {
     )
   })
 })
+
+

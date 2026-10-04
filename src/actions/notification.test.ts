@@ -30,6 +30,9 @@ vi.mock("web-push", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    automationRule: { findMany: async () => [] },
+    merchantAlias: { findUnique: async () => null },
+    merchant: { findFirst: async () => null, create: async () => null, findUnique: async () => null },
     pushSubscription: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
@@ -379,3 +382,5 @@ describe("PRODUCTION WEB PUSH & NOTIFICATIONS TEST SUITE", () => {
     })
   })
 })
+
+

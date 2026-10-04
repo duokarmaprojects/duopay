@@ -33,6 +33,9 @@ vi.mock("@/services/balance", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    automationRule: { findMany: async () => [] },
+    merchantAlias: { findUnique: async () => null },
+    merchant: { findFirst: async () => null, create: async () => null, findUnique: async () => null },
     user: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
@@ -145,3 +148,5 @@ describe("PHASE 1: Friendship & Friends Authorization Suite", () => {
     expect(profile.balance.type).toBe("OWED_TO_USER")
   })
 })
+
+

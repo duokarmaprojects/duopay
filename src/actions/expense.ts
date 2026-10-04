@@ -114,8 +114,38 @@ export async function addExpense(formData: FormData) {
   // Strict INR validation (at most 2 decimals, positive, safe bounds)
   const { inr: amountInr, paise: amountPaise } = validateInrAmount(rawAmount, "amount", 10000000)
 
-  const description = sanitizeTextInput(rawDescription, 100)
-  const category = sanitizeTextInput(rawCategory, 30)
+  let description = sanitizeTextInput(rawDescription, 100)
+  let category = sanitizeTextInput(rawCategory, 30)
+
+  // 1. Normalize Merchant & get default category
+  const { normalizeMerchantName } = await import('@/actions/merchant')
+  const { normalizedName, category: defaultCategory } = await normalizeMerchantName(description)
+  description = normalizedName
+  if (category === "OTHER" && defaultCategory) {
+    category = defaultCategory
+  }
+
+  // 2. Fetch User Automation Rules
+  const rules = await prisma.automationRule.findMany({
+    where: { userId, isActive: true },
+    orderBy: { priority: 'desc' }
+  })
+
+  // 3. Apply Rules
+  const sourceInput = (formData.get("source") as string) || "MANUAL"
+  for (const rule of rules) {
+    let match = true
+    if (rule.merchantName && !description.toLowerCase().includes(rule.merchantName.toLowerCase())) match = false
+    if (rule.minAmount && amountPaise < rule.minAmount) match = false
+    if (rule.maxAmount && amountPaise > rule.maxAmount) match = false
+    if (rule.source && rule.source !== sourceInput) match = false
+    if (rule.groupId && rule.groupId !== rawGroupId) match = false
+
+    if (match && rule.setCategory) {
+      category = rule.setCategory
+      break // Apply highest priority matched rule
+    }
+  }
 
   const parsed = addExpenseSchema.safeParse({
     groupId: rawGroupId,
@@ -387,4 +417,92 @@ export async function deleteExpense(expenseId: string) {
   revalidatePath(`/groups/${expense.groupId}`)
   revalidatePath('/')
   revalidatePath('/activity')
+}
+
+export async function confirmUpcomingExpense(expenseId: string) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+  const userId = session.user.id
+
+  validateId(expenseId, "expenseId")
+
+  const expense = await prisma.expense.findUnique({
+    where: { id: expenseId },
+    include: {
+      group: {
+        include: {
+          members: true
+        }
+      }
+    }
+  })
+
+  if (!expense) throw new Error("Expense not found")
+
+  if (expense.status !== "UPCOMING") {
+    throw new Error("Only UPCOMING expenses can be confirmed")
+  }
+
+  // Ensure user is payer or group member
+  const isPayer = expense.payerId === userId
+  const isGroupMember = expense.group?.members.some(m => m.userId === userId)
+  
+  if (!isPayer && !isGroupMember) {
+    throw new Error("Unauthorized to confirm this expense")
+  }
+
+  await prisma.expense.update({
+    where: { id: expenseId },
+    data: { status: "FINAL" }
+  })
+
+  if (expense.groupId) {
+    revalidatePath(`/groups/${expense.groupId}`)
+  }
+  revalidatePath('/bills')
+  return { success: true }
+}
+
+export async function skipUpcomingExpense(expenseId: string) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+  const userId = session.user.id
+
+  validateId(expenseId, "expenseId")
+
+  const expense = await prisma.expense.findUnique({
+    where: { id: expenseId },
+    include: {
+      group: {
+        include: {
+          members: true
+        }
+      }
+    }
+  })
+
+  if (!expense) throw new Error("Expense not found")
+
+  if (expense.status !== "UPCOMING") {
+    throw new Error("Only UPCOMING expenses can be skipped")
+  }
+
+  // Ensure user is payer or group member
+  const isPayer = expense.payerId === userId
+  const isGroupMember = expense.group?.members.some(m => m.userId === userId)
+  
+  if (!isPayer && !isGroupMember) {
+    throw new Error("Unauthorized to skip this expense")
+  }
+
+  await prisma.expense.update({
+    where: { id: expenseId },
+    data: { status: "SKIPPED" }
+  })
+
+  if (expense.groupId) {
+    revalidatePath(`/groups/${expense.groupId}`)
+  }
+  revalidatePath('/bills')
+  return { success: true }
 }

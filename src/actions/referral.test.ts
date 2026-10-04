@@ -22,6 +22,9 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("@/lib/db", () => {
   return {
     prisma: {
+    automationRule: { findMany: async () => [] },
+    merchantAlias: { findUnique: async () => null },
+    merchant: { findFirst: async () => null, create: async () => null, findUnique: async () => null },
       user: {
         findUnique: vi.fn(),
         update: vi.fn(),
@@ -257,3 +260,5 @@ describe("REFERRAL & REWARDS DOMAIN & SECURITY SUITE", () => {
     )
   })
 })
+
+

@@ -14,6 +14,9 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    automationRule: { findMany: async () => [] },
+    merchantAlias: { findUnique: async () => null },
+    merchant: { findFirst: async () => null, create: async () => null, findUnique: async () => null },
     userSettings: {
       findUnique: vi.fn(),
       upsert: vi.fn(),
@@ -126,3 +129,5 @@ describe("User Settings & Privacy Enforcement (settings.ts)", () => {
     )
   })
 })
+
+

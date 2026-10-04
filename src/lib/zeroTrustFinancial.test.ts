@@ -32,6 +32,9 @@ vi.mock("next/cache", () => ({
 vi.mock("@/lib/db", () => {
   return {
     prisma: {
+    automationRule: { findMany: async () => [] },
+    merchantAlias: { findUnique: async () => null },
+    merchant: { findFirst: async () => null, create: async () => null, findUnique: async () => null },
       user: {
         findUnique: vi.fn(),
         update: vi.fn(),
@@ -623,3 +626,5 @@ describe("DUOPAY ZERO-TRUST FINANCIAL MANIPULATION HARDENING SUITE", () => {
     await expect(addExpense(formData)).rejects.toThrow("Participant attacker_dave_not_in_group is not a member of this group")
   })
 })
+
+

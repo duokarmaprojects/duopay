@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const RECURRING_FREQUENCIES = ["DAILY", "WEEKLY", "MONTHLY", "YEARLY"] as const
+export const RECURRING_FREQUENCIES = ["DAILY", "WEEKLY", "MONTHLY", "YEARLY", "CUSTOM"] as const
 export type RecurringFrequency = (typeof RECURRING_FREQUENCIES)[number]
 
 export const RECURRING_STATUSES = ["ACTIVE", "PAUSED", "CANCELLED", "COMPLETED"] as const
@@ -36,6 +36,10 @@ export function calculateNextOccurrence(
       next.setFullYear(next.getFullYear() + 1)
       break
     }
+    case "CUSTOM":
+      // Fallback for custom for now, we'll just treat it as monthly or no-op depending on future logic
+      next.setMonth(next.getMonth() + 1)
+      break
     default:
       throw new Error(`Unsupported frequency: ${frequency}`)
   }

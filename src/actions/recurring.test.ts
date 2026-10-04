@@ -23,6 +23,9 @@ vi.mock("@/services/notification", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    automationRule: { findMany: async () => [] },
+    merchantAlias: { findUnique: async () => null },
+    merchant: { findFirst: async () => null, create: async () => null, findUnique: async () => null },
     groupMember: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
@@ -251,3 +254,5 @@ describe("PHASE 2: Recurring Expenses System", () => {
     })
   })
 })
+
+

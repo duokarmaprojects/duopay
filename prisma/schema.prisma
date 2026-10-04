@@ -49,6 +49,7 @@ model User {
   friendshipsInitiated Friendship[]        @relation("FriendshipsInitiated")
   friendshipsReceived  Friendship[]        @relation("FriendshipsReceived")
   recurringExpenses    RecurringExpense[]
+  automationRules      AutomationRule[]
 }
 
 // NextAuth standard models
@@ -130,6 +131,7 @@ model Expense {
   priority      String   @default("NORMAL")
   dueDate       DateTime?
   reminderAt    DateTime?
+  status        String   @default("FINAL") // FINAL, UPCOMING, SKIPPED
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   idempotencyKey String? @unique
@@ -403,3 +405,48 @@ model RecurringExpense {
 
 
 
+// Phase G: Smart Automations
+model AutomationRule {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String
+  priority      Int      @default(0)
+  
+  // Conditions (null means any)
+  merchantName  String?
+  minAmount     Int?
+  maxAmount     Int?
+  source        String?
+  groupId       String?
+  
+  // Actions
+  setCategory   String?
+  
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Phase H: Merchant Intelligence
+model Merchant {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  normalizedName  String
+  defaultCategory String?
+  icon            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  aliases MerchantAlias[]
+}
+
+model MerchantAlias {
+  id         String   @id @default(cuid())
+  merchantId String
+  alias      String   @unique
+  createdAt  DateTime @default(now())
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+}
