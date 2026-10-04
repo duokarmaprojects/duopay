@@ -13,6 +13,8 @@ import { getGroupRecurringExpenses, generateDueRecurringExpenses } from "@/actio
 import TripDashboard from "./TripDashboard"
 import CollectionDashboard from "./CollectionDashboard"
 
+import GroupContentSwitcher from "./GroupContentSwitcher"
+
 export default async function GroupPage({ params }: { params: { id: string } }) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
@@ -121,110 +123,120 @@ export default async function GroupPage({ params }: { params: { id: string } }) 
         </div>
       </header>
 
-      {group.type === 'TRIP' ? (
-        <TripDashboard {...dashboardProps} />
-      ) : group.type === 'COLLECTION' ? (
-        <CollectionDashboard {...dashboardProps} />
-      ) : (
-        <div className="flex-1 overflow-y-auto pb-32">
-          <div className="p-4 sm:p-6 space-y-6 max-w-3xl mx-auto">
-            
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                <p className="text-[13px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Total Spent</p>
-                <p className="text-xl font-bold text-slate-900 dark:text-white">₹{(totalSpending / 100).toFixed(0)}</p>
-              </div>
-              <div className={`p-4 rounded-3xl border shadow-sm ${
-                isOwed ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/50' : 
-                owes ? 'bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-900/50' : 
-                'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800'
-              }`}>
-                <p className={`text-[13px] font-semibold uppercase tracking-wide mb-1 ${
-                  isOwed ? 'text-emerald-600/80 dark:text-emerald-500/80' : 
-                  owes ? 'text-red-600/80 dark:text-red-500/80' : 
-                  'text-slate-500 dark:text-slate-400'
-                }`}>
-                  {isOwed ? 'You are owed' : owes ? 'You owe' : 'Your Balance'}
-                </p>
-                <p className={`text-xl font-bold ${
-                  isOwed ? 'text-emerald-700 dark:text-emerald-400' : 
-                  owes ? 'text-red-700 dark:text-red-400' : 
-                  'text-slate-900 dark:text-white'
-                }`}>
-                  ₹{(Math.abs(netAmount) / 100).toFixed(0)}
-                </p>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="flex items-center gap-3">
-              <Link 
-                href={`/expenses/add?groupId=${group.id}`} 
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 px-4 rounded-2xl text-center transition-all shadow-sm shadow-blue-200 dark:shadow-none flex items-center justify-center gap-2"
-              >
-                <Receipt size={18} />
-                Add Expense
-              </Link>
-              <button className="flex-1 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 font-semibold py-3.5 px-4 rounded-2xl text-center transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer">
-                <Camera size={18} />
-                Scan Receipt
-              </button>
-            </div>
-
-            {/* Settle Up Section */}
-            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-[15px] font-bold text-slate-900 dark:text-white">Settlements</h2>
-                <GroupSmartSettleButton groupId={group.id} />
-              </div>
-              
-              {oweBalances.length === 0 && owedBalances.length === 0 ? (
-                <div className="text-center py-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <PieChart size={24} />
+      <GroupContentSwitcher
+        groupId={group.id}
+        groupName={group.name}
+        currentUserId={userId}
+        overviewContent={
+          group.type === 'TRIP' ? (
+            <TripDashboard {...dashboardProps} />
+          ) : group.type === 'COLLECTION' ? (
+            <CollectionDashboard {...dashboardProps} />
+          ) : (
+            <div className="flex-1 overflow-y-auto pb-32">
+              <div className="p-4 sm:p-6 space-y-6 max-w-3xl mx-auto">
+                
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <p className="text-[13px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Total Spent</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white">₹{(totalSpending / 100).toFixed(0)}</p>
                   </div>
-                  <p className="text-emerald-600 dark:text-emerald-400 font-semibold">You're all settled up!</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">No pending balances in this group.</p>
+                  <div className={`p-4 rounded-3xl border shadow-sm ${
+                    isOwed ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/50' : 
+                    owes ? 'bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-900/50' : 
+                    'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800'
+                  }`}>
+                    <p className={`text-[13px] font-semibold uppercase tracking-wide mb-1 ${
+                      isOwed ? 'text-emerald-600/80 dark:text-emerald-500/80' : 
+                      owes ? 'text-red-600/80 dark:text-red-500/80' : 
+                      'text-slate-500 dark:text-slate-400'
+                    }`}>
+                      {isOwed ? 'You are owed' : owes ? 'You owe' : 'Your Balance'}
+                    </p>
+                    <p className={`text-xl font-bold ${
+                      isOwed ? 'text-emerald-700 dark:text-emerald-400' : 
+                      owes ? 'text-red-700 dark:text-red-400' : 
+                      'text-slate-900 dark:text-white'
+                    }`}>
+                      ₹{(Math.abs(netAmount) / 100).toFixed(0)}
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {oweBalances.map((b: any) => (
-                    <div key={b.userId} className="flex items-center justify-between p-4 rounded-2xl border border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-950/20">
-                      <div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">You owe <span className="font-semibold text-slate-900 dark:text-white">{b.user.name}</span></p>
-                        <p className="text-lg font-bold text-red-600 dark:text-red-500">₹{(b.amount / 100).toFixed(0)}</p>
-                      </div>
-                      <Link href={`/settle?userId=${b.userId}&groupId=${group.id}`} className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm">
-                        Settle
-                      </Link>
-                    </div>
-                  ))}
+
+                {/* Quick Actions */}
+                <div className="flex items-center gap-3">
+                  <Link 
+                    href={`/expenses/add?groupId=${group.id}`} 
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 px-4 rounded-2xl text-center transition-all shadow-sm shadow-blue-200 dark:shadow-none flex items-center justify-center gap-2"
+                  >
+                    <Receipt size={18} />
+                    Add Expense
+                  </Link>
+                  <Link
+                    href={`/expenses/add?groupId=${group.id}&mode=receipt`}
+                    className="flex-1 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 font-semibold py-3.5 px-4 rounded-2xl text-center transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Camera size={18} />
+                    Scan Receipt
+                  </Link>
+                </div>
+
+                {/* Settle Up Section */}
+                <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-[15px] font-bold text-slate-900 dark:text-white">Settlements</h2>
+                    <GroupSmartSettleButton groupId={group.id} />
+                  </div>
                   
-                  {owedBalances.map((b: any) => (
-                    <div key={b.userId} className="flex items-center justify-between p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-950/20">
-                      <div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400"><span className="font-semibold text-slate-900 dark:text-white">{b.user.name}</span> owes you</p>
-                        <p className="text-lg font-bold text-emerald-600 dark:text-emerald-500">₹{(b.amount / 100).toFixed(0)}</p>
+                  {oweBalances.length === 0 && owedBalances.length === 0 ? (
+                    <div className="text-center py-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                      <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <PieChart size={24} />
                       </div>
-                      <div className="px-4 py-2 bg-emerald-100/50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-semibold">
-                        Waiting
-                      </div>
+                      <p className="text-emerald-600 dark:text-emerald-400 font-semibold">You're all settled up!</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">No pending balances in this group.</p>
                     </div>
-                  ))}
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {oweBalances.map((b: any) => (
+                        <div key={b.userId} className="flex items-center justify-between p-4 rounded-2xl border border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-950/20">
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">You owe <span className="font-semibold text-slate-900 dark:text-white">{b.user.name}</span></p>
+                            <p className="text-lg font-bold text-red-600 dark:text-red-500">₹{(b.amount / 100).toFixed(0)}</p>
+                          </div>
+                          <Link href={`/settle?userId=${b.userId}&groupId=${group.id}`} className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm">
+                            Settle
+                          </Link>
+                        </div>
+                      ))}
+                      
+                      {owedBalances.map((b: any) => (
+                        <div key={b.userId} className="flex items-center justify-between p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-950/20">
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400"><span className="font-semibold text-slate-900 dark:text-white">{b.user.name}</span> owes you</p>
+                            <p className="text-lg font-bold text-emerald-600 dark:text-emerald-500">₹{(b.amount / 100).toFixed(0)}</p>
+                          </div>
+                          <div className="px-4 py-2 bg-emerald-100/50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-semibold">
+                            Waiting
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Expenses List */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm sm:p-5">
-              <GroupExpenseList expenses={group.expenses} currentUserId={userId} />
-            </div>
+                {/* Expenses List */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm sm:p-5">
+                  <GroupExpenseList expenses={group.expenses} currentUserId={userId} groupId={group.id} />
+                </div>
 
-            <GroupActions groupId={group.id} isCreator={isCreator} />
-          </div>
-        </div>
-      )}
+                <GroupActions groupId={group.id} isCreator={isCreator} />
+              </div>
+            </div>
+          )
+        }
+      />
     </div>
   )
 }

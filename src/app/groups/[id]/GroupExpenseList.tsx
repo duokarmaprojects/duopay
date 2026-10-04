@@ -1,9 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Receipt, Calendar } from "lucide-react"
+import { useParams } from "next/navigation"
+import { Receipt, Calendar, MessageSquare, ArrowRightLeft } from "lucide-react"
 import { ExpenseIcon } from "@/components/expenses/ExpenseIcon"
 import DeleteExpenseButton from "./DeleteExpenseButton"
+import ExpenseCommentsModal from "@/components/expenses/ExpenseCommentsModal"
+import MoveExpenseModal from "@/components/expenses/MoveExpenseModal"
 
 interface Participant {
   userId: string
@@ -26,10 +29,15 @@ interface ExpenseItem {
 interface Props {
   expenses: ExpenseItem[]
   currentUserId: string
+  groupId?: string
 }
 
-export default function GroupExpenseList({ expenses, currentUserId }: Props) {
+export default function GroupExpenseList({ expenses, currentUserId, groupId }: Props) {
+  const params = useParams()
+  const activeGroupId = groupId || (typeof params?.id === "string" ? params.id : "")
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL")
+  const [commentExpense, setCommentExpense] = useState<ExpenseItem | null>(null)
+  const [moveExpenseItem, setMoveExpenseItem] = useState<ExpenseItem | null>(null)
 
   const presentCategories = Array.from(
     new Set(
@@ -168,7 +176,23 @@ export default function GroupExpenseList({ expenses, currentUserId }: Props) {
                       </p>
                     )}
                   </div>
-                  <div className="shrink-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => setCommentExpense(expense)}
+                      title="Comments & Discussion"
+                      className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <MessageSquare size={16} />
+                    </button>
+                    {activeGroupId && (
+                      <button
+                        onClick={() => setMoveExpenseItem(expense)}
+                        title="Move to another group"
+                        className="p-1.5 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <ArrowRightLeft size={16} />
+                      </button>
+                    )}
                     <DeleteExpenseButton expenseId={expense.id} />
                   </div>
                 </div>
@@ -176,6 +200,27 @@ export default function GroupExpenseList({ expenses, currentUserId }: Props) {
             )
           })}
         </div>
+      )}
+
+      {commentExpense && (
+        <ExpenseCommentsModal
+          expenseId={commentExpense.id}
+          expenseDescription={commentExpense.description}
+          currentUserId={currentUserId}
+          isOpen={!!commentExpense}
+          onClose={() => setCommentExpense(null)}
+        />
+      )}
+
+      {moveExpenseItem && activeGroupId && (
+        <MoveExpenseModal
+          expenseId={moveExpenseItem.id}
+          expenseDescription={moveExpenseItem.description}
+          amountPaise={moveExpenseItem.amount}
+          currentGroupId={activeGroupId}
+          isOpen={!!moveExpenseItem}
+          onClose={() => setMoveExpenseItem(null)}
+        />
       )}
     </div>
   )

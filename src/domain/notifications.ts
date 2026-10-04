@@ -23,6 +23,8 @@ export type NotificationType =
   | "RECURRING_EXPENSE_REMINDER"
   | "FRIEND_REQUEST_RECEIVED"
   | "FRIEND_REQUEST_ACCEPTED"
+  | "EXPENSE_COMMENT"
+  | "GROUP_MESSAGE"
   | "SYSTEM";
 
 export interface PushNotificationPayload {

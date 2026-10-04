@@ -52,6 +52,9 @@ model User {
   automationRules      AutomationRule[]
   receiptScans         ReceiptScan[]
   orderImports         OrderImport[]
+  groupMessages        GroupMessage[]
+  expenseComments      ExpenseComment[]
+  attachments          Attachment[]
 }
 
 // NextAuth standard models
@@ -103,6 +106,8 @@ model Group {
   expenses    Expense[]
   settlements Settlement[]
   recurringExpenses RecurringExpense[]
+  messages          GroupMessage[]
+  attachments       Attachment[]
 }
 
 model GroupMember {
@@ -143,6 +148,8 @@ model Expense {
   
   participants ExpenseParticipant[]
   receiptItems ReceiptItem[]
+  comments     ExpenseComment[]
+  attachments  Attachment[]
 }
 
 model ReceiptItem {
@@ -514,4 +521,71 @@ model OrderImport {
   @@index([userId])
   @@index([userId, status])
   @@index([externalOrderId])
+}
+
+// Phase N: Group Chat Messages
+model GroupMessage {
+  id             String    @id @default(cuid())
+  groupId        String
+  senderId       String
+  body           String
+  idempotencyKey String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  group          Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  sender         User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  attachments    Attachment[]
+
+  @@index([groupId, createdAt])
+  @@index([senderId, createdAt])
+  @@index([groupId, idempotencyKey])
+}
+
+// Phase O: Expense Comments
+model ExpenseComment {
+  id             String    @id @default(cuid())
+  expenseId      String
+  authorId       String
+  body           String
+  idempotencyKey String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  expense        Expense   @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  author         User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([expenseId, createdAt])
+  @@index([authorId, createdAt])
+  @@index([expenseId, idempotencyKey])
+}
+
+// Phase P: Attachments
+model Attachment {
+  id          String   @id @default(cuid())
+  ownerId     String
+  groupId     String?
+  expenseId   String?
+  messageId   String?
+  storageKey  String
+  fileName    String?
+  mimeType    String
+  sizeBytes   Int
+  width       Int?
+  height      Int?
+  sha256      String?
+  createdAt   DateTime @default(now())
+
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  group       Group?        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  expense     Expense?      @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  message     GroupMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([groupId])
+  @@index([expenseId])
+  @@index([messageId])
+  @@index([sha256])
 }
