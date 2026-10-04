@@ -5,6 +5,7 @@ import Link from "next/link"
 import { ArrowLeft, Users, ChevronRight, Scan, PencilLine } from "lucide-react"
 import { AddExpenseForm } from "./form"
 import { ReceiptScanner } from "./ReceiptScanner"
+import { CashExpenseForm } from "./CashExpenseForm"
 import { GroupIcon } from "@/components/ui/GroupIcon"
 
 export default async function AddExpensePage({
@@ -144,6 +145,19 @@ export default async function AddExpensePage({
           </Link>
 
           <Link 
+            href={`/orders`}
+            className="w-full flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-3xl shadow-sm hover:shadow-md hover:border-orange-500/30 transition-all group"
+          >
+            <div className="w-14 h-14 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-gray-900 dark:text-zinc-100 tracking-tight">Import Order</h3>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 leading-snug">Swiggy, Zomato, Instamart</p>
+            </div>
+          </Link>
+
+          <Link 
             href={`/expenses/add?groupId=${groupId}&mode=manual`}
             className="w-full flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-3xl shadow-sm hover:shadow-md hover:border-blue-500/30 transition-all group"
           >
@@ -161,7 +175,7 @@ export default async function AddExpensePage({
   }
 
   return (
-    <div className="flex flex-col flex-1 bg-white dark:bg-zinc-950 h-screen transition-colors">
+    <div className="flex flex-col flex-1 bg-white dark:bg-zinc-950 min-h-screen transition-colors">
       <header className="flex items-center p-4 border-b border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky top-0 z-10">
         <Link href={`/expenses/add?groupId=${groupId}`} className="p-2 -ml-2 text-gray-900 dark:text-zinc-100 active:bg-gray-100 dark:active:bg-zinc-800 rounded-full transition-colors">
           <ArrowLeft size={24} />
@@ -176,8 +190,12 @@ export default async function AddExpensePage({
       <div className="flex-1 overflow-y-auto">
         {mode === 'scan' || mode === 'screenshot' ? (
           <ReceiptScanner groupId={groupId} members={members} currentUserId={session.user.id} mode={mode} />
+        ) : mode === 'cash' ? (
+          <div className="max-w-md mx-auto p-4 sm:p-6 pb-24">
+            <CashExpenseForm groupId={groupId} members={members} currentUserId={session.user.id} />
+          </div>
         ) : (
-          <AddExpenseForm groupId={groupId} members={members} currentUserId={session.user.id} source={mode === 'cash' ? 'CASH' : 'MANUAL'} />
+          <AddExpenseForm groupId={groupId} members={members} currentUserId={session.user.id} source="MANUAL" />
         )}
       </div>
     </div>

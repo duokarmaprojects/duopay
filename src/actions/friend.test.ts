@@ -33,6 +33,8 @@ vi.mock("@/services/balance", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    receiptScan: { create: async () => ({ id: 'scan-1', status: 'PENDING' }), findUnique: async () => null, update: async () => null, findMany: async () => [] },
+    orderImport: { create: async () => null, findUnique: async () => null, update: async () => null, findMany: async () => [] },
     automationRule: { findMany: async () => [] },
     merchantAlias: { findUnique: async () => null },
     merchant: { findFirst: async () => null, create: async () => null, findUnique: async () => null },
@@ -148,5 +150,6 @@ describe("PHASE 1: Friendship & Friends Authorization Suite", () => {
     expect(profile.balance.type).toBe("OWED_TO_USER")
   })
 })
+
 
 

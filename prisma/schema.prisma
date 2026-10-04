@@ -50,6 +50,8 @@ model User {
   friendshipsReceived  Friendship[]        @relation("FriendshipsReceived")
   recurringExpenses    RecurringExpense[]
   automationRules      AutomationRule[]
+  receiptScans         ReceiptScan[]
+  orderImports         OrderImport[]
 }
 
 // NextAuth standard models
@@ -449,4 +451,67 @@ model MerchantAlias {
   createdAt  DateTime @default(now())
 
   merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+}
+
+// Phase J: Receipt Intelligence - uploaded receipt scanning sessions
+model ReceiptScan {
+  id              String   @id @default(cuid())
+  userId          String
+  // PENDING | EXTRACTING | NEEDS_REVIEW | CONFIRMED | FAILED | EXPIRED
+  status          String   @default("PENDING")
+  imageUrl        String?
+  imageMimeType   String?
+  imageSizeBytes  Int?
+  // JSON: ExtractedReceipt (merchant, date, total, tax, discount, items, confidence, reconciliationWarning)
+  extractedData   String?
+  // SHA-256 of image bytes for duplicate detection
+  fingerprint     String?
+  idempotencyKey  String?
+  // UPLOAD | SHARE | CAMERA | SCREENSHOT
+  source          String   @default("UPLOAD")
+  linkedExpenseId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([fingerprint])
+  @@index([userId, status])
+}
+
+// Phase K: Provider-neutral order import
+model OrderImport {
+  id              String    @id @default(cuid())
+  userId          String
+  // SWIGGY | ZOMATO | BLINKIT | ZEPTO | BIGBASKET | UNKNOWN
+  provider        String    @default("UNKNOWN")
+  externalOrderId String?
+  merchant        String?
+  orderDate       DateTime?
+  currency        String    @default("INR")
+  subtotalPaise   Int?
+  taxPaise        Int?
+  deliveryFeePaise Int?
+  discountPaise   Int?
+  tipPaise        Int?
+  totalPaise      Int?
+  // JSON array of line items
+  itemsJson       String?
+  // MANUAL | EMAIL | SCREENSHOT | SHARE | PDF
+  importSource    String    @default("MANUAL")
+  // PENDING_REVIEW | CONFIRMED | DISMISSED | FAILED
+  status          String    @default("PENDING_REVIEW")
+  linkedExpenseId String?
+  idempotencyKey  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([externalOrderId])
 }

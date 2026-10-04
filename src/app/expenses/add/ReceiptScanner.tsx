@@ -41,13 +41,21 @@ export function ReceiptScanner({ groupId, members, currentUserId, mode = 'scan' 
       setReceipt(data)
       
       // Initialize edit states
-      setMerchant(data.merchant || "")
-      setTotalInr(data.totalPaise ? paiseToInr(data.totalPaise).toString() : "")
-      setItems(data.items || [])
+      const merchantVal = typeof data.merchant === 'string' ? data.merchant : (data.merchant?.value || "")
+      const totalPaiseVal = typeof data.totalPaise === 'number' ? data.totalPaise : (data.totalPaise?.value || 0)
+      const itemsList: ReceiptItem[] = data.items || (data.lineItems ? data.lineItems.map(l => ({
+        id: l.id,
+        name: typeof l.name === 'string' ? l.name : (l.name?.value || "Item"),
+        amountPaise: typeof l.lineTotalPaise === 'number' ? l.lineTotalPaise : (l.lineTotalPaise?.value || 0)
+      })) : [])
+
+      setMerchant(merchantVal)
+      setTotalInr(totalPaiseVal ? paiseToInr(totalPaiseVal).toString() : "")
+      setItems(itemsList)
       
       // Initialize assignments (all empty)
       const initialAssigments: Record<string, Set<string>> = {}
-      data.items.forEach(item => {
+      itemsList.forEach(item => {
         initialAssigments[item.id] = new Set()
       })
       setItemAssignments(initialAssigments)
@@ -204,7 +212,7 @@ export function ReceiptScanner({ groupId, members, currentUserId, mode = 'scan' 
       <div className="flex flex-col h-full bg-gray-50 relative pb-32 overflow-y-auto">
         <div className="p-6 pb-2">
           <h2 className="text-xl font-bold text-gray-900">Review Receipt</h2>
-          {receipt?.confidence !== "HIGH" && (
+          {(receipt?.overallConfidence ?? receipt?.confidence) !== "HIGH" && (
             <div className="mt-3 bg-orange-50 border border-orange-200 text-orange-700 p-3 rounded-xl flex items-start gap-2 text-sm">
               <AlertTriangle size={18} className="shrink-0 mt-0.5" />
               <p>We couldn't perfectly read every detail. Please review carefully before continuing.</p>
