@@ -1,19 +1,26 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { getSpendingAnalytics, TimeRangeFilter } from "@/actions/analytics"
+import { getUserSpendingForecast } from "@/services/forecast"
+import { getBudgets } from "@/actions/budget"
 import AnalyticsDashboard from "./AnalyticsDashboard"
 import BottomNav from "@/components/navigation/BottomNav"
 
 export default async function AnalyticsPage({
   searchParams,
 }: {
-  searchParams?: { range?: string }
+  searchParams?: Promise<{ range?: string }> | { range?: string }
 }) {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 
-  const range = (searchParams?.range || "MONTH") as TimeRangeFilter
-  const analytics = await getSpendingAnalytics(range)
+  const resolvedParams = searchParams ? await searchParams : {}
+  const range = (resolvedParams.range || "MONTH") as TimeRangeFilter
+  const [analytics, forecast, budgets] = await Promise.all([
+    getSpendingAnalytics(range),
+    getUserSpendingForecast(session.user.id).catch(() => null),
+    getBudgets().catch(() => []),
+  ])
 
   return (
     <div className="flex flex-col flex-1 bg-gray-50 pb-20 min-h-screen">
@@ -23,7 +30,12 @@ export default async function AnalyticsPage({
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        <AnalyticsDashboard initialData={analytics} currentRange={range} />
+        <AnalyticsDashboard
+          initialData={analytics}
+          forecast={forecast}
+          budgets={budgets}
+          currentRange={range}
+        />
       </div>
 
       <BottomNav
@@ -34,3 +46,4 @@ export default async function AnalyticsPage({
     </div>
   )
 }
+

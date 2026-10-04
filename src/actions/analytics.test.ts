@@ -140,6 +140,113 @@ describe("Phase 2 Retention Suite: Search & Analytics", () => {
       expect(summary.categories[1].category).toBe("TRANSPORT")
       expect(summary.categories[1].amountPaise).toBe(20000)
     })
+
+    it("should handle custom and various date ranges deterministically", async () => {
+      vi.mocked(auth as any).mockResolvedValueOnce({ user: { id: "user-1" } })
+      vi.mocked(prisma.expense.findMany).mockResolvedValue([])
+      vi.mocked(prisma.settlement.findMany).mockResolvedValue([])
+
+      const weekSummary = await getSpendingAnalytics("WEEK")
+      expect(weekSummary.timeRange).toBe("WEEK")
+      expect(weekSummary.userSharePaise).toBe(0)
+
+      vi.mocked(auth as any).mockResolvedValueOnce({ user: { id: "user-1" } })
+      const yearSummary = await getSpendingAnalytics("YEAR")
+      expect(yearSummary.timeRange).toBe("YEAR")
+
+      vi.mocked(auth as any).mockResolvedValueOnce({ user: { id: "user-1" } })
+      const allSummary = await getSpendingAnalytics("ALL")
+      expect(allSummary.timeRange).toBe("ALL")
+
+      vi.mocked(auth as any).mockResolvedValueOnce({ user: { id: "user-1" } })
+      const customSummary = await getSpendingAnalytics(
+        "CUSTOM",
+        "2026-01-01T00:00:00Z",
+        "2026-01-31T23:59:59Z"
+      )
+      expect(customSummary.timeRange).toBe("CUSTOM")
+    })
+
+    it("should compute Month-over-Month comparison with safe denominator handling", async () => {
+      vi.mocked(auth as any).mockResolvedValueOnce({ user: { id: "user-1" } })
+
+      // Call 1: current month expenses (₹500 true spend)
+      vi.mocked(prisma.expense.findMany).mockResolvedValueOnce([
+        {
+          id: "exp-curr",
+          amount: 50000,
+          category: "FOOD",
+          payerId: "user-1",
+          status: "FINAL",
+          participants: [{ userId: "user-1", share: 50000 }],
+        } as any,
+      ])
+      vi.mocked(prisma.settlement.findMany).mockResolvedValueOnce([])
+
+      // Call 2: previous month expenses (₹250 true spend)
+      vi.mocked(prisma.expense.findMany).mockResolvedValueOnce([
+        {
+          id: "exp-prev",
+          amount: 25000,
+          category: "FOOD",
+          payerId: "user-1",
+          status: "FINAL",
+          participants: [{ userId: "user-1", share: 25000 }],
+        } as any,
+      ])
+      vi.mocked(prisma.settlement.findMany).mockResolvedValueOnce([])
+
+      // Call 3: enrichments
+      vi.mocked(prisma.expense.findMany).mockResolvedValueOnce([])
+
+      const summary = await getSpendingAnalytics("MONTH")
+      expect(summary.monthOverMonth.hasPreviousData).toBe(true)
+      expect(summary.monthOverMonth.currentPeriodPaise).toBe(50000)
+      expect(summary.monthOverMonth.previousPeriodPaise).toBe(25000)
+      expect(summary.monthOverMonth.changeAmountPaise).toBe(25000)
+      expect(summary.monthOverMonth.changePercent).toBe(100) // 100% increase
+      expect(summary.monthOverMonth.isIncrease).toBe(true)
+    })
+
+    it("should generate deterministic insights for high cash ratio and recurring commitments", async () => {
+      vi.mocked(auth as any).mockResolvedValueOnce({ user: { id: "user-1" } })
+
+      // Call 1: current month expenses with Cash and Recurring and Upcoming
+      vi.mocked(prisma.expense.findMany).mockResolvedValueOnce([
+        {
+          id: "exp-cash",
+          amount: 100000,
+          category: "GROCERIES",
+          description: "Supermarket",
+          source: "CASH",
+          status: "FINAL",
+          priority: "RECURRING",
+          payerId: "user-1",
+          participants: [{ userId: "user-1", share: 100000 }],
+        } as any,
+        {
+          id: "exp-upcoming",
+          amount: 30000,
+          category: "UTILITIES",
+          status: "UPCOMING",
+          payerId: "user-1",
+          participants: [{ userId: "user-1", share: 30000 }],
+        } as any,
+      ])
+      vi.mocked(prisma.settlement.findMany).mockResolvedValueOnce([])
+      // Call 2: previous month (empty)
+      vi.mocked(prisma.expense.findMany).mockResolvedValueOnce([])
+      vi.mocked(prisma.settlement.findMany).mockResolvedValueOnce([])
+      // Call 3: enrichments
+      vi.mocked(prisma.expense.findMany).mockResolvedValueOnce([])
+
+      const summary = await getSpendingAnalytics("MONTH")
+      expect(summary.insights.length).toBeGreaterThanOrEqual(3)
+      expect(summary.insights.some((i) => i.includes("GROCERIES is your largest"))).toBe(true)
+      expect(summary.insights.some((i) => i.includes("Recurring commitments account for"))).toBe(true)
+      expect(summary.insights.some((i) => i.includes("Cash transactions represent 100%"))).toBe(true)
+      expect(summary.insights.some((i) => i.includes("upcoming scheduled obligations"))).toBe(true)
+    })
   })
 })
 

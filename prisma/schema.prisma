@@ -55,6 +55,7 @@ model User {
   groupMessages        GroupMessage[]
   expenseComments      ExpenseComment[]
   attachments          Attachment[]
+  budgets              Budget[]
 }
 
 // NextAuth standard models
@@ -150,6 +151,9 @@ model Expense {
   receiptItems ReceiptItem[]
   comments     ExpenseComment[]
   attachments  Attachment[]
+
+  @@index([status, createdAt])
+  @@index([category])
 }
 
 model ReceiptItem {
@@ -588,4 +592,27 @@ model Attachment {
   @@index([expenseId])
   @@index([messageId])
   @@index([sha256])
+}
+
+
+// Phase T: Budgets
+model Budget {
+  id             String    @id @default(cuid())
+  userId         String
+  category       String?
+  amountPaise    Int
+  period         String    @default("MONTHLY")
+  startDate      DateTime?
+  endDate        DateTime?
+  warningPercent Int       @default(80)
+  active         Boolean   @default(true)
+  idempotencyKey String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, active])
+  @@index([userId, category])
+  @@index([userId, idempotencyKey])
 }

@@ -25,6 +25,8 @@ export type NotificationType =
   | "FRIEND_REQUEST_ACCEPTED"
   | "EXPENSE_COMMENT"
   | "GROUP_MESSAGE"
+  | "BUDGET_WARNING"
+  | "BUDGET_EXCEEDED"
   | "SYSTEM";
 
 export interface PushNotificationPayload {

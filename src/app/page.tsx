@@ -5,6 +5,7 @@ import { Plus, Users, Activity, User as UserIcon } from "lucide-react"
 import { prisma } from "@/lib/db"
 import { getUserBalances } from "@/services/balance"
 import { getCashbackSummary } from "@/actions/cashback"
+import { getUserMonthlyTrueSpend } from "@/services/trueSpend"
 
 import DashboardView from "./components/DashboardView"
 
@@ -32,7 +33,14 @@ export default async function HomePage() {
     redirect('/setup-profile')
   }
 
-  const [{ totalOwedToUser, totalUserOwes, detailedBalances }, cashbackSummary, unreadNotificationCount, recentExpenses] = await Promise.all([
+  const now = new Date()
+  const [
+    { totalOwedToUser, totalUserOwes, detailedBalances },
+    cashbackSummary,
+    unreadNotificationCount,
+    recentExpenses,
+    monthlyTrueSpend,
+  ] = await Promise.all([
     getUserBalances(session.user.id),
     getCashbackSummary(),
     prisma.notification.count({ where: { userId: session.user.id, readAt: null } }),
@@ -41,7 +49,8 @@ export default async function HomePage() {
       include: { group: true, participants: true, payer: true },
       orderBy: { date: 'desc' },
       take: 5
-    })
+    }),
+    getUserMonthlyTrueSpend(session.user.id, now.getFullYear(), now.getMonth()).catch(() => null),
   ])
 
   return (
@@ -54,6 +63,7 @@ export default async function HomePage() {
       cashbackSummary={cashbackSummary}
       unreadNotificationCount={unreadNotificationCount}
       recentExpenses={recentExpenses}
+      monthlyTrueSpend={monthlyTrueSpend}
     />
   )
 }

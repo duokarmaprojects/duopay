@@ -2,10 +2,11 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
-import { Bell, Plus, Receipt, UserPlus, History, ChevronDown, ChevronUp, CheckCircle, Clock } from "lucide-react"
+import { Bell, Plus, Receipt, UserPlus, History, ChevronDown, ChevronUp, CheckCircle, Clock, Sparkles, ChevronRight, PiggyBank, TrendingUp } from "lucide-react"
 import { ExpenseIcon } from "@/components/expenses/ExpenseIcon"
 import BottomNav from "@/components/navigation/BottomNav"
 import GlobalSearchModal from "@/components/search/GlobalSearchModal"
+import { TrueSpendSummary } from "@/domain/trueSpend"
 
 type DetailedBalance = {
   userId: string
@@ -23,6 +24,7 @@ type DashboardViewProps = {
   cashbackSummary?: any
   unreadNotificationCount?: number
   recentExpenses?: any[]
+  monthlyTrueSpend?: TrueSpendSummary | null
 }
 
 export default function DashboardView({
@@ -32,7 +34,8 @@ export default function DashboardView({
   totalOwedToUser,
   detailedBalances,
   unreadNotificationCount = 0,
-  recentExpenses = []
+  recentExpenses = [],
+  monthlyTrueSpend = null,
 }: DashboardViewProps) {
   const [expandedSection, setExpandedSection] = useState<'owe' | 'owed' | null>(null)
   
@@ -169,6 +172,62 @@ export default function DashboardView({
             </div>
           )}
         </div>
+
+        {/* Personal Finance / True Spend Card */}
+        {monthlyTrueSpend && (
+          <div className="bg-gradient-to-br from-indigo-900/90 to-purple-900/90 text-white rounded-3xl p-5 shadow-sm border border-indigo-700/50 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-white/10 rounded-xl backdrop-blur-sm">
+                  <Sparkles size={16} className="text-yellow-300" />
+                </div>
+                <span className="text-xs font-bold tracking-wider uppercase text-indigo-200">
+                  This Month's True Spend
+                </span>
+              </div>
+              <Link
+                href="/analytics"
+                className="text-xs font-semibold text-white/90 hover:text-white flex items-center gap-1 bg-white/15 px-3 py-1.5 rounded-full active:scale-95 transition-all"
+              >
+                Analytics <ChevronRight size={14} />
+              </Link>
+            </div>
+            <div className="flex items-baseline justify-between pt-1">
+              <div>
+                <span className="text-3xl font-extrabold tracking-tight">
+                  {formatMoney(monthlyTrueSpend.totalTrueSpendPaise)}
+                </span>
+                <p className="text-[11px] text-indigo-200 mt-0.5">
+                  Your actual financial share (excluding loans & group totals)
+                </p>
+              </div>
+              {monthlyTrueSpend.upcomingObligationsPaise > 0 && (
+                <div className="text-right">
+                  <span className="text-xs text-indigo-200 block">Upcoming</span>
+                  <span className="text-sm font-bold text-yellow-300">
+                    +{formatMoney(monthlyTrueSpend.upcomingObligationsPaise)}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10 text-xs">
+              <Link
+                href="/budgets"
+                className="text-indigo-200 hover:text-white py-1 flex items-center gap-1.5 transition-colors"
+              >
+                <PiggyBank size={14} className="text-indigo-300" />
+                <span>Manage Budgets</span>
+              </Link>
+              <Link
+                href="/analytics"
+                className="text-indigo-200 hover:text-white py-1 flex items-center justify-end gap-1.5 transition-colors"
+              >
+                <TrendingUp size={14} className="text-emerald-300" />
+                <span>Forecast & Trends</span>
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Add Expense Button */}
         <Link 
