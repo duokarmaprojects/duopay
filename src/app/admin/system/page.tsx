@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/db"
 import { ServerCrash, Key, CheckCircle, XCircle } from "lucide-react"
+import { PwaDiagnosticsCard } from "./PwaDiagnosticsCard"
 
 export const metadata = {
   title: 'System Health | Admin Dashboard',
@@ -9,11 +10,12 @@ export const metadata = {
 export default async function AdminSystemPage({
   searchParams,
 }: {
-  searchParams: { page?: string }
+  searchParams: Promise<{ page?: string }> | { page?: string }
 }) {
   await requireAdmin()
 
-  const page = Number(searchParams?.page) || 1
+  const resolvedParams = searchParams ? await searchParams : {}
+  const page = Number(resolvedParams?.page) || 1
   const limit = 50
   const skip = (page - 1) * limit
 
@@ -38,11 +40,14 @@ export default async function AdminSystemPage({
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">System Health</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Monitor system errors and exceptions.
+          Monitor system health, PWA update states, and runtime exceptions.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* PWA & Lifecycle Diagnostics */}
+        <PwaDiagnosticsCard />
+
         {/* VAPID Configuration Status */}
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-zinc-100 mb-4">

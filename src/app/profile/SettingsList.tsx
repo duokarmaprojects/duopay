@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { 
-  CreditCard, Lock, 
+  CreditCard, Lock, Fingerprint,
   Activity, Download, Trash2, 
   HelpCircle, FileText, ChevronRight, X, Shield, Sparkles, Settings
 } from "lucide-react"
@@ -108,10 +108,16 @@ export default function SettingsList({ userName, userPhone, upiId, email, isAdmi
       <SectionTitle>Security</SectionTitle>
       <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col">
         <Item 
+          icon={Fingerprint} 
+          title="Biometric Unlock" 
+          subtitle="Fingerprint, Face ID & App Lock" 
+          href="/settings/security" 
+        />
+        <Item 
           icon={Lock} 
           title="Security & Login" 
           subtitle={email || "Phone Authentication"} 
-          onClick={handleNotImplemented} 
+          href="/settings/security" 
         />
       </div>
 

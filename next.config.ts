@@ -43,7 +43,27 @@ const securityHeaders = [
   },
 ];
 
+import fs from "fs";
+import path from "path";
+
+let buildId = "latest";
+let version = "2026.10.latest";
+try {
+  const versionFile = path.join(process.cwd(), "src", "lib", "pwa", "version.ts");
+  if (fs.existsSync(versionFile)) {
+    const content = fs.readFileSync(versionFile, "utf8");
+    const mBuild = content.match(/BUILD_ID = '([^']+)'/);
+    const mVer = content.match(/APP_VERSION = '([^']+)'/);
+    if (mBuild) buildId = mBuild[1];
+    if (mVer) version = mVer[1];
+  }
+} catch (e) {}
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_ID: buildId,
+    NEXT_PUBLIC_APP_VERSION: version,
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: "2mb",
@@ -51,6 +71,28 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Pragma", value: "no-cache" },
+          { key: "Expires", value: "0" },
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+        ],
+      },
+      {
+        source: "/manifest.webmanifest",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
+          { key: "Content-Type", value: "application/manifest+json; charset=utf-8" },
+        ],
+      },
+      {
+        source: "/_next/static/(.*)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
       {
         source: "/(.*)",
         headers: securityHeaders,

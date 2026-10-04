@@ -2,8 +2,8 @@
 // Automatically generated at build time — DO NOT MANUALLY EDIT public/sw.js
 // Template: src/pwa/sw-template.js
 
-const BUILD_ID = 'dafb7c9';
-const VERSION = '2026.10.dafb7c9';
+const BUILD_ID = '__SW_BUILD_ID__';
+const VERSION = '__SW_VERSION__';
 const CACHE_STATIC_NAME = 'duopay-static-' + BUILD_ID;
 const CACHE_RUNTIME_NAME = 'duopay-runtime-' + BUILD_ID;
 const EXPECTED_CACHES = [CACHE_STATIC_NAME, CACHE_RUNTIME_NAME];

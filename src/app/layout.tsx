@@ -6,6 +6,8 @@ import { ThemeProvider } from "./theme-provider";
 import { PwaProvider } from "@/components/pwa/PwaProvider";
 import { ConnectivityIndicator } from "@/components/offline/ConnectivityIndicator";
 import { NativePushManager } from "@/components/notifications/NativePushManager";
+import { BiometricLockProvider } from "@/components/biometric/BiometricLockProvider";
+import { auth } from "@/lib/auth";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -36,11 +38,13 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -77,11 +81,13 @@ export default function RootLayout({
       <body className={`${inter.className} bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 antialiased min-h-screen flex flex-col transition-colors duration-200 ease-in-out`}>
         <ThemeProvider>
           <PwaProvider>
-            <NativePushManager />
-            <ConnectivityIndicator />
-            <main className="flex-1 flex flex-col w-full max-w-md mx-auto bg-white dark:bg-zinc-950 shadow-sm min-h-screen overflow-x-hidden pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] relative transition-colors duration-200 ease-in-out">
-              {children}
-            </main>
+            <BiometricLockProvider userId={session?.user?.id}>
+              <NativePushManager />
+              <ConnectivityIndicator />
+              <main className="flex-1 flex flex-col w-full max-w-md mx-auto bg-white dark:bg-zinc-950 shadow-sm min-h-screen overflow-x-hidden pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] relative transition-colors duration-200 ease-in-out">
+                {children}
+              </main>
+            </BiometricLockProvider>
           </PwaProvider>
         </ThemeProvider>
       </body>
