@@ -132,15 +132,15 @@ export default async function ActivityPage({
   activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   return (
-    <div className="flex flex-col flex-1 bg-gray-50 dark:bg-zinc-950 pb-20 min-h-screen">
-      <header className="bg-gray-50/80 dark:bg-zinc-950/80 backdrop-blur-md px-5 pt-8 pb-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between sticky top-0 z-10">
+    <div className="flex flex-col flex-1 bg-[#09090b] text-zinc-100 min-h-[100dvh] pb-24">
+      <header className="bg-[#09090b]/80 backdrop-blur-md px-5 pt-8 pb-4 border-b border-zinc-800/80 flex items-center justify-between sticky top-0 z-10">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Activity</h1>
-          <p className="text-sm font-medium text-gray-500 dark:text-zinc-400 mt-0.5">Your financial timeline</p>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Activity</h1>
+          <p className="text-sm font-medium text-zinc-400 mt-0.5">Your financial timeline</p>
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 w-full max-w-md mx-auto">
         <ActivityFeed activities={activities} />
       </div>
 

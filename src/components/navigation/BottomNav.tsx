@@ -91,7 +91,7 @@ export default function BottomNav({ activeTab, userImage, userName }: BottomNavP
   return (
     <nav
       aria-label="Primary navigation"
-      className="fixed bottom-0 left-0 right-0 w-full bg-white dark:bg-zinc-950/90 backdrop-blur-xl border-t border-gray-100 dark:border-zinc-800/50 flex justify-around items-end px-2 sm:px-6 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3 z-30 transition-colors"
+      className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-[#09090b]/95 backdrop-blur-xl border-t border-zinc-800/80 flex justify-around items-end px-2 sm:px-6 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3 z-30"
     >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.key

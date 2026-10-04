@@ -15,7 +15,7 @@ export default async function SetupProfilePage() {
   })
 
   if (user?.phone && user?.upiId && user?.name && user.name !== 'New User') {
-    redirect('/')
+    redirect('/profile/edit')
   }
 
   return (

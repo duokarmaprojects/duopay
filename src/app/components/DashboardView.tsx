@@ -59,28 +59,28 @@ export default function DashboardView({
   }
 
   return (
-    <div className="flex flex-col flex-1 bg-gray-50 dark:bg-zinc-950 min-h-screen text-gray-900 dark:text-zinc-100 font-sans pb-24">
+    <div className="flex flex-col flex-1 bg-[#09090b] text-zinc-100 min-h-[100dvh] font-sans pb-24">
       {/* Header */}
-      <header className="px-5 pt-6 pb-4 flex justify-between items-center sticky top-0 bg-gray-50/80 dark:bg-zinc-950/80 backdrop-blur-md z-20">
-        <div className="font-bold text-xl tracking-tight text-blue-600 dark:text-blue-500">
+      <header className="px-5 pt-6 pb-4 flex justify-between items-center sticky top-0 bg-[#09090b]/80 backdrop-blur-md z-20 border-b border-zinc-800/40">
+        <div className="font-bold text-xl tracking-tight text-blue-500">
           DuoPay
         </div>
         <div className="flex items-center gap-3">
           <GlobalSearchModal />
           <Link
             href="/notifications"
-            className="relative w-10 h-10 rounded-full bg-white dark:bg-zinc-900 shadow-sm border border-gray-100 dark:border-zinc-800 flex items-center justify-center text-gray-700 dark:text-zinc-300 active:scale-95 transition-transform"
+            className="relative w-10 h-10 rounded-full bg-[#121316] shadow-sm border border-zinc-800 flex items-center justify-center text-zinc-300 active:scale-95 transition-transform"
           >
             <Bell size={20} />
             {unreadNotificationCount > 0 && (
-              <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-zinc-900"></span>
+              <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-[#121316]"></span>
             )}
           </Link>
-          <Link href="/profile" className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 dark:border-zinc-800 active:scale-95 transition-transform shadow-sm bg-white dark:bg-zinc-900">
+          <Link href="/profile" className="w-10 h-10 rounded-full overflow-hidden border border-zinc-800 active:scale-95 transition-transform shadow-sm bg-[#121316]">
             {user?.image || sessionUser.image ? (
               <img src={user?.image?.startsWith('data:') ? `/api/users/${user.id}/avatar` : (user?.image || sessionUser.image || '')} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-zinc-400 font-semibold">
+              <div className="w-full h-full flex items-center justify-center text-zinc-400 font-semibold">
                 {(user?.name || sessionUser.name || 'U').charAt(0).toUpperCase()}
               </div>
             )}
@@ -91,16 +91,16 @@ export default function DashboardView({
       <main className="px-5 flex flex-col gap-6">
         {/* Greeting */}
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 suppressHydrationWarning className="text-2xl font-bold tracking-tight text-zinc-100">
             {greeting}, {user?.name?.split(' ')[0] || sessionUser.name?.split(' ')[0]}
           </h1>
         </div>
 
         {/* Hero Balance Section */}
-        <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow-sm border border-gray-100 dark:border-zinc-800 flex flex-col gap-5">
+        <div className="bg-[#121316] rounded-3xl p-5 shadow-sm border border-zinc-800/80 flex flex-col gap-5">
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Net Balance</span>
-            <span className={`text-4xl font-black tracking-tight ${netBalance >= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500'}`}>
+            <span className="text-sm font-medium text-zinc-400 uppercase tracking-wider">Net Balance</span>
+            <span className={`text-4xl font-black tracking-tight ${netBalance >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               {netBalance >= 0 ? '+' : '-'}{formatMoney(Math.abs(netBalance))}
             </span>
           </div>
@@ -240,31 +240,31 @@ export default function DashboardView({
 
         {/* Shortcuts */}
         <div>
-          <h2 className="text-sm font-bold text-gray-900 dark:text-zinc-100 mb-3">Shortcuts</h2>
+          <h2 className="text-sm font-bold text-zinc-100 mb-3">Shortcuts</h2>
           <div className="grid grid-cols-4 gap-3">
             <Link href="/expenses/add" className="flex flex-col items-center gap-2">
-              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 flex items-center justify-center text-blue-600 dark:text-blue-500 shadow-sm active:scale-95 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-[#121316] border border-zinc-800/80 flex items-center justify-center text-blue-500 shadow-sm active:scale-95 transition-transform">
                 <Receipt size={24} />
               </div>
-              <span className="text-[11px] font-semibold text-gray-600 dark:text-zinc-400 text-center leading-tight">Scan<br/>Receipt</span>
+              <span className="text-[11px] font-semibold text-zinc-400 text-center leading-tight">Scan<br/>Receipt</span>
             </Link>
             <Link href="/settle" className="flex flex-col items-center gap-2">
-              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 flex items-center justify-center text-emerald-600 dark:text-emerald-500 shadow-sm active:scale-95 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-[#121316] border border-zinc-800/80 flex items-center justify-center text-emerald-400 shadow-sm active:scale-95 transition-transform">
                 <CheckCircle size={24} />
               </div>
-              <span className="text-[11px] font-semibold text-gray-600 dark:text-zinc-400 text-center leading-tight">Settle<br/>Up</span>
+              <span className="text-[11px] font-semibold text-zinc-400 text-center leading-tight">Settle<br/>Up</span>
             </Link>
             <Link href="/groups/create" className="flex flex-col items-center gap-2">
-              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 flex items-center justify-center text-purple-600 dark:text-purple-500 shadow-sm active:scale-95 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-[#121316] border border-zinc-800/80 flex items-center justify-center text-purple-400 shadow-sm active:scale-95 transition-transform">
                 <UserPlus size={24} />
               </div>
-              <span className="text-[11px] font-semibold text-gray-600 dark:text-zinc-400 text-center leading-tight">Create<br/>Group</span>
+              <span className="text-[11px] font-semibold text-zinc-400 text-center leading-tight">Create<br/>Group</span>
             </Link>
             <Link href="/activity" className="flex flex-col items-center gap-2">
-              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 flex items-center justify-center text-amber-600 dark:text-amber-500 shadow-sm active:scale-95 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-[#121316] border border-zinc-800/80 flex items-center justify-center text-amber-400 shadow-sm active:scale-95 transition-transform">
                 <History size={24} />
               </div>
-              <span className="text-[11px] font-semibold text-gray-600 dark:text-zinc-400 text-center leading-tight">View<br/>Activity</span>
+              <span className="text-[11px] font-semibold text-zinc-400 text-center leading-tight">View<br/>Activity</span>
             </Link>
           </div>
         </div>
@@ -272,16 +272,16 @@ export default function DashboardView({
         {/* Recent Expenses */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-gray-900 dark:text-zinc-100">Recent Expenses</h2>
-            <Link href="/activity" className="text-xs font-semibold text-blue-600 dark:text-blue-500">View all</Link>
+            <h2 className="text-sm font-bold text-zinc-100">Recent Expenses</h2>
+            <Link href="/activity" className="text-xs font-semibold text-blue-400">View all</Link>
           </div>
           
           <div className="flex flex-col gap-3">
             {recentExpenses.length === 0 ? (
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 text-center border border-gray-100 dark:border-zinc-800 shadow-sm">
-                <Clock size={24} className="mx-auto text-gray-400 mb-2" />
-                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">No recent expenses</p>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">Expenses you're involved in will appear here.</p>
+              <div className="bg-[#121316] rounded-2xl p-6 text-center border border-zinc-800/80 shadow-sm">
+                <Clock size={24} className="mx-auto text-zinc-500 mb-2" />
+                <p className="text-sm font-medium text-zinc-100">No recent expenses</p>
+                <p className="text-xs text-zinc-400 mt-1">Expenses you're involved in will appear here.</p>
               </div>
             ) : (
               recentExpenses.map((expense: any) => {
@@ -290,24 +290,24 @@ export default function DashboardView({
                 const amountForUser = userParticipant ? userParticipant.amountOwed : 0
                 
                 return (
-                  <Link key={expense.id} href={`/expenses/${expense.id}`} className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-sm flex items-center gap-3 active:scale-[0.98] transition-transform">
+                  <Link key={expense.id} href={`/expenses/${expense.id}`} className="bg-[#121316] p-4 rounded-2xl border border-zinc-800/80 shadow-sm flex items-center gap-3 active:scale-[0.98] transition-transform">
                     <ExpenseIcon 
                       category={expense.category?.name || expense.categoryId} 
                       description={expense.description} 
                       className="w-12 h-12 rounded-xl"
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-gray-900 dark:text-zinc-100 truncate">{expense.description}</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">
+                      <p className="font-semibold text-sm text-zinc-100 truncate">{expense.description}</p>
+                      <p suppressHydrationWarning className="text-xs text-zinc-400 truncate">
                         {expense.group?.name || 'Non-group expense'} • {new Date(expense.date).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-right flex flex-col items-end">
-                      <span className="font-bold text-sm text-gray-900 dark:text-zinc-100">{formatMoney(expense.amount)}</span>
+                      <span className="font-bold text-sm text-zinc-100">{formatMoney(expense.amount)}</span>
                       {isPayer ? (
-                        <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded">You paid</span>
+                        <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-950/30 px-1.5 py-0.5 rounded border border-emerald-900/30">You paid</span>
                       ) : (
-                        <span className="text-[10px] font-semibold text-red-600 dark:text-red-500 bg-red-50 dark:bg-red-950/30 px-1.5 py-0.5 rounded">You owe {formatMoney(amountForUser)}</span>
+                        <span className="text-[10px] font-semibold text-red-400 bg-red-950/30 px-1.5 py-0.5 rounded border border-red-900/30">You owe {formatMoney(amountForUser)}</span>
                       )}
                     </div>
                   </Link>

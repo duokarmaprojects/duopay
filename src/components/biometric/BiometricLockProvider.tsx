@@ -172,29 +172,10 @@ export function BiometricLockProvider({
       }
     };
 
-    const handleWindowBlur = () => {
-      setIsAppInBackground(true);
-      const now = Date.now();
-      lastActiveThrottleRef.current = now;
-      updateLastActive(userId, now);
-    };
-
-    const handleWindowFocus = () => {
-      setIsAppInBackground(false);
-      const config = loadBiometricConfig(userId);
-      if (config && isLockTimeoutExceeded(config, Date.now())) {
-        setIsLocked(true);
-      }
-    };
-
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("blur", handleWindowBlur);
-    window.addEventListener("focus", handleWindowFocus);
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("blur", handleWindowBlur);
-      window.removeEventListener("focus", handleWindowFocus);
     };
   }, [userId, isEnabled]);
 

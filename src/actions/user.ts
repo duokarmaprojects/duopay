@@ -111,6 +111,62 @@ export async function updateUpiId(newUpi: string) {
   }
 }
 
+const updateProfileSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").max(50, "Name is too long"),
+  upiId: z.string().min(5, "UPI ID is too short").max(70, "UPI ID is too long"),
+  email: z.string().email("Invalid email address").optional().or(z.literal("")),
+}).strict()
+
+export async function updateUserProfile(data: { name: string; upiId: string; email?: string }) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    await logSecurityEvent({
+      type: "AUTH_UNAUTHORIZED_ACCESS",
+      details: { action: "updateUserProfile" },
+    })
+    throw new Error("Unauthorized")
+  }
+
+  const parsed = updateProfileSchema.safeParse({
+    name: sanitizeTextInput(data.name.trim(), 50),
+    upiId: data.upiId.trim(),
+    email: data.email?.trim() || undefined,
+  })
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0].message)
+  }
+
+  const format = validateUpiFormat(parsed.data.upiId)
+  if (!format.valid || !format.normalized) {
+    throw new Error(format.error || "Invalid UPI ID format.")
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: session.user.id },
+    data: {
+      name: parsed.data.name,
+      upiId: format.normalized,
+      ...(parsed.data.email !== undefined ? { email: parsed.data.email || null } : {}),
+    },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      upiId: true,
+      email: true,
+      image: true,
+    }
+  })
+
+  revalidatePath('/profile')
+  revalidatePath('/profile/edit')
+  revalidatePath('/settle')
+  revalidatePath('/')
+
+  return { success: true, user: updated }
+}
+
 export async function uploadProfileImage(formData: FormData) {
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")

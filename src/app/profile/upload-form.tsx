@@ -78,7 +78,6 @@ export default function ProfileImageUpload({
 
   const handleFilePicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    // Reset file input so re-selecting same file triggers event
     e.target.value = "";
     if (!file) return;
 
@@ -120,10 +119,10 @@ export default function ProfileImageUpload({
     <>
       {/* Profile Avatar trigger */}
       <div
-        className="relative mb-4 cursor-pointer active:scale-95 transition-transform"
+        className="relative mb-3 cursor-pointer active:scale-95 transition-transform group"
         onClick={() => setShowSheet(true)}
       >
-        <div className="w-24 h-24 rounded-full bg-gray-100 overflow-hidden border-4 border-white shadow-md flex items-center justify-center">
+        <div className="w-24 h-24 rounded-full bg-zinc-800 overflow-hidden border-2 border-zinc-700/80 shadow-lg flex items-center justify-center">
           {activeImage ? (
             <img
               src={activeImage}
@@ -131,24 +130,23 @@ export default function ProfileImageUpload({
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-500 text-3xl font-bold">
+            <div className="w-full h-full flex items-center justify-center text-zinc-300 text-3xl font-bold bg-zinc-800">
               {name?.charAt(0) || "U"}
             </div>
           )}
         </div>
-        <div className="absolute bottom-0 right-0 bg-black text-white p-2 rounded-full border-2 border-white shadow-sm flex items-center justify-center">
+        <div className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full border-2 border-[#09090b] shadow-md flex items-center justify-center group-hover:scale-105 transition-transform">
           <Camera size={14} />
         </div>
       </div>
 
       {error && (
-        <div className="px-4 py-2 mb-3 bg-red-50 text-red-600 rounded-xl text-xs text-center border border-red-100">
+        <div className="px-4 py-2 mb-3 bg-red-950/40 text-red-400 rounded-xl text-xs text-center border border-red-900/40">
           {error}
         </div>
       )}
 
       {/* Hidden Mobile File Inputs */}
-      {/* 1. Camera Input (with capture) */}
       <input
         type="file"
         accept="image/*"
@@ -157,7 +155,6 @@ export default function ProfileImageUpload({
         ref={cameraInputRef}
         onChange={handleFilePicked}
       />
-      {/* 2. Gallery Input */}
       <input
         type="file"
         accept="image/png,image/jpeg,image/webp,image/jpg"
@@ -168,19 +165,19 @@ export default function ProfileImageUpload({
 
       {/* Action Sheet: Camera or Gallery */}
       {showSheet && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-5 flex flex-col gap-3 animate-in slide-in-from-bottom-6 duration-200">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-[#121316] border border-zinc-800 text-zinc-100 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-5 flex flex-col gap-3 animate-in slide-in-from-bottom-6 duration-200">
             <div className="flex justify-between items-center mb-1">
-              <h3 className="font-bold text-base text-gray-900">Change Profile Photo</h3>
+              <h3 className="font-bold text-base text-zinc-100">Change Profile Photo</h3>
               <button
                 type="button"
                 onClick={() => setShowSheet(false)}
-                className="p-1.5 text-gray-400 hover:text-gray-900 rounded-full"
+                className="p-1.5 text-zinc-400 hover:text-zinc-100 rounded-full transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
-            <p className="text-xs text-gray-500 mb-2">
+            <p className="text-xs text-zinc-400 mb-2">
               Select how you want to update your profile photo.
             </p>
 
@@ -189,14 +186,14 @@ export default function ProfileImageUpload({
               onClick={() => {
                 cameraInputRef.current?.click();
               }}
-              className="w-full flex items-center gap-3.5 px-4 py-3.5 bg-gray-50 hover:bg-gray-100 rounded-2xl font-semibold text-sm text-gray-900 active:scale-98 transition-all"
+              className="w-full flex items-center gap-3.5 px-4 py-3.5 bg-zinc-800/60 hover:bg-zinc-800 rounded-2xl font-semibold text-sm text-zinc-100 active:scale-98 transition-all border border-zinc-700/40"
             >
-              <div className="w-9 h-9 rounded-xl bg-black text-white flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center shrink-0">
                 <Camera size={18} />
               </div>
               <div className="text-left">
-                <p className="font-semibold text-sm">Take Photo</p>
-                <p className="text-[11px] text-gray-500 font-normal">Use your phone camera</p>
+                <p className="font-semibold text-sm text-zinc-100">Take Photo</p>
+                <p className="text-[11px] text-zinc-400 font-normal">Use your phone camera</p>
               </div>
             </button>
 
@@ -205,21 +202,21 @@ export default function ProfileImageUpload({
               onClick={() => {
                 galleryInputRef.current?.click();
               }}
-              className="w-full flex items-center gap-3.5 px-4 py-3.5 bg-gray-50 hover:bg-gray-100 rounded-2xl font-semibold text-sm text-gray-900 active:scale-98 transition-all"
+              className="w-full flex items-center gap-3.5 px-4 py-3.5 bg-zinc-800/60 hover:bg-zinc-800 rounded-2xl font-semibold text-sm text-zinc-100 active:scale-98 transition-all border border-zinc-700/40"
             >
-              <div className="w-9 h-9 rounded-xl bg-gray-200 text-gray-800 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-zinc-700 text-zinc-300 flex items-center justify-center shrink-0">
                 <ImageIcon size={18} />
               </div>
               <div className="text-left">
-                <p className="font-semibold text-sm">Choose from Photos</p>
-                <p className="text-[11px] text-gray-500 font-normal">Select from your photo gallery</p>
+                <p className="font-semibold text-sm text-zinc-100">Choose from Photos</p>
+                <p className="text-[11px] text-zinc-400 font-normal">Select from your photo gallery</p>
               </div>
             </button>
 
             <button
               type="button"
               onClick={() => setShowSheet(false)}
-              className="w-full py-3 mt-1 text-center font-semibold text-sm text-gray-500 hover:text-gray-900"
+              className="w-full py-3 mt-1 text-center font-semibold text-sm text-zinc-400 hover:text-zinc-200"
             >
               Cancel
             </button>
@@ -229,14 +226,14 @@ export default function ProfileImageUpload({
 
       {/* Photo Preview & Confirm Modal */}
       {previewUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-6 flex flex-col items-center animate-in zoom-in-95 duration-200">
-            <h3 className="font-bold text-base text-gray-900 mb-1">Preview New Photo</h3>
-            <p className="text-xs text-gray-500 mb-6 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-[#121316] border border-zinc-800 text-zinc-100 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-6 flex flex-col items-center animate-in zoom-in-95 duration-200">
+            <h3 className="font-bold text-base text-zinc-100 mb-1">Preview New Photo</h3>
+            <p className="text-xs text-zinc-400 mb-6 text-center">
               Looking good! Would you like to set this as your profile photo?
             </p>
 
-            <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-100 shadow-inner mb-6 bg-gray-50">
+            <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-zinc-700 shadow-inner mb-6 bg-zinc-800">
               <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
             </div>
 
@@ -245,7 +242,7 @@ export default function ProfileImageUpload({
                 type="button"
                 onClick={() => setPreviewUrl(null)}
                 disabled={isSaving}
-                className="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm active:bg-gray-50 transition-colors disabled:opacity-50"
+                className="flex-1 py-3 px-4 rounded-xl border border-zinc-700 text-zinc-300 font-semibold text-sm hover:bg-zinc-800 active:bg-zinc-800 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -253,7 +250,7 @@ export default function ProfileImageUpload({
                 type="button"
                 onClick={handleConfirmUpload}
                 disabled={isSaving}
-                className="flex-1 py-3 px-4 rounded-xl bg-black text-white font-semibold text-sm active:bg-gray-800 transition-colors flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+                className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
               >
                 {isSaving ? (
                   <>

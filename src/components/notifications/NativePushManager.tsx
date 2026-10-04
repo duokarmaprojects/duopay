@@ -60,7 +60,9 @@ export function NativePushManager() {
     });
 
     return () => {
-      PushNotifications.removeAllListeners();
+      try {
+        PushNotifications.removeAllListeners().catch(() => {});
+      } catch (e) {}
     };
   }, [router]);
 

@@ -19,25 +19,35 @@ type SettingsListProps = {
 }
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-  <h2 className="text-[11px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2 px-4 mt-8">{children}</h2>
+  <h2 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-2 px-1 mt-6">
+    {children}
+  </h2>
 )
 
 const Item = ({ icon: Icon, title, subtitle, href, onClick, destructive }: any) => (
   <Link 
     href={href || "#"} 
     onClick={onClick}
-    className={`flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border-b border-gray-50 dark:border-zinc-800/80 active:bg-gray-50 dark:active:bg-zinc-800 transition-colors first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 ${destructive ? 'text-red-600 dark:text-red-500' : 'text-gray-900 dark:text-zinc-100'}`}
+    className={`flex items-center justify-between p-4 bg-[#121316] border-b border-zinc-800/60 active:bg-zinc-800/40 transition-colors first:rounded-t-2xl last:rounded-b-2xl last:border-b-0 ${
+      destructive ? 'text-red-400' : 'text-zinc-100'
+    }`}
   >
-    <div className="flex items-center gap-4">
-      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${destructive ? 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-500' : 'bg-gray-50 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400'}`}>
-        <Icon size={20} />
+    <div className="flex items-center gap-3.5">
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+        destructive ? 'bg-red-950/40 text-red-400 border border-red-900/30' : 'bg-zinc-800/60 text-zinc-400 border border-zinc-700/40'
+      }`}>
+        <Icon size={18} />
       </div>
       <div>
-        <p className="font-semibold text-sm">{title}</p>
-        {subtitle && <p className={`text-xs mt-0.5 ${destructive ? 'text-red-400 dark:text-red-400' : 'text-gray-500 dark:text-zinc-500'}`}>{subtitle}</p>}
+        <p className="font-semibold text-sm leading-tight">{title}</p>
+        {subtitle && (
+          <p className={`text-xs mt-0.5 leading-tight ${destructive ? 'text-red-400/80' : 'text-zinc-400'}`}>
+            {subtitle}
+          </p>
+        )}
       </div>
     </div>
-    <ChevronRight size={20} className={destructive ? 'text-red-300 dark:text-red-900' : 'text-gray-300 dark:text-zinc-700'} />
+    <ChevronRight size={18} className={destructive ? 'text-red-900' : 'text-zinc-600'} />
   </Link>
 )
 
@@ -49,14 +59,14 @@ export default function SettingsList({ userName, userPhone, upiId, email, isAdmi
 
   const handleNotImplemented = (e: React.MouseEvent) => {
     e.preventDefault()
-    alert("This feature requires backend implementation (Settings API/Schema updates).")
+    alert("This feature is coming soon.")
   }
 
   const handleDeleteAccount = (e: React.MouseEvent) => {
     e.preventDefault()
     const confirmed = confirm("Are you sure you want to delete your account? This action cannot be undone.")
     if (confirmed) {
-      alert("Backend account deletion logic needs to be implemented first.")
+      alert("Please contact DuoPay support to complete account deletion.")
     }
   }
 
@@ -84,17 +94,17 @@ export default function SettingsList({ userName, userPhone, upiId, email, isAdmi
   return (
     <div className="flex flex-col px-4">
       <SectionTitle>Payments</SectionTitle>
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col">
+      <div className="bg-[#121316] rounded-2xl border border-zinc-800/80 shadow-sm flex flex-col overflow-hidden">
         <Item 
           icon={CreditCard} 
           title="UPI Details" 
-          subtitle="Edit payment info" 
+          subtitle={upiId || "Add UPI ID"} 
           onClick={(e: React.MouseEvent) => { e.preventDefault(); setIsEditingUpi(true); }} 
         />
         <Item 
           icon={Settings} 
           title="Manage Payment Information" 
-          subtitle="Cards, Banks" 
+          subtitle="Cards, Bank Accounts" 
           onClick={handleNotImplemented} 
         />
         <Item 
@@ -106,7 +116,7 @@ export default function SettingsList({ userName, userPhone, upiId, email, isAdmi
       </div>
 
       <SectionTitle>Security</SectionTitle>
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col">
+      <div className="bg-[#121316] rounded-2xl border border-zinc-800/80 shadow-sm flex flex-col overflow-hidden">
         <Item 
           icon={Fingerprint} 
           title="Biometric Unlock" 
@@ -122,7 +132,7 @@ export default function SettingsList({ userName, userPhone, upiId, email, isAdmi
       </div>
 
       <SectionTitle>Data</SectionTitle>
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col">
+      <div className="bg-[#121316] rounded-2xl border border-zinc-800/80 shadow-sm flex flex-col overflow-hidden">
         <Item 
           icon={Activity} 
           title="My Activity" 
@@ -142,7 +152,7 @@ export default function SettingsList({ userName, userPhone, upiId, email, isAdmi
       </div>
 
       <SectionTitle>Support</SectionTitle>
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col">
+      <div className="bg-[#121316] rounded-2xl border border-zinc-800/80 shadow-sm flex flex-col overflow-hidden">
         <Item 
           icon={HelpCircle} 
           title="Help & Support" 
@@ -158,37 +168,39 @@ export default function SettingsList({ userName, userPhone, upiId, email, isAdmi
       {isAdmin && (
         <>
           <SectionTitle>Admin</SectionTitle>
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col">
+          <div className="bg-[#121316] rounded-2xl border border-zinc-800/80 shadow-sm flex flex-col overflow-hidden">
             <Item 
               icon={Shield} 
               title="Admin Panel" 
-              subtitle="Internal metrics and tools" 
+              subtitle="Internal metrics and system tools" 
               href="/admin" 
             />
           </div>
         </>
       )}
 
+      {/* Edit UPI Modal */}
       {isEditingUpi && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200 border border-gray-100 dark:border-zinc-800">
-            <div className="p-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-900/50">
-              <h2 className="font-bold text-gray-900 dark:text-zinc-100">UPI Details</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#121316] rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-zinc-800 animate-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-zinc-800/80 flex justify-between items-center bg-[#15171b]">
+              <h2 className="font-bold text-sm text-zinc-100">Update UPI ID</h2>
               <button 
+                type="button"
                 onClick={() => setIsEditingUpi(false)}
-                className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-zinc-100 bg-white dark:bg-zinc-800 rounded-full transition-colors shadow-sm border border-gray-200 dark:border-zinc-700"
+                className="p-1.5 text-zinc-400 hover:text-zinc-100 bg-zinc-800/80 rounded-full transition-colors border border-zinc-700/60"
               >
                 <X size={16} />
               </button>
             </div>
             
-            <form onSubmit={handleUpdateUpi} className="p-5">
-              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
-                Update your UPI ID to receive payments from your friends seamlessly.
+            <form onSubmit={handleUpdateUpi} className="p-5 flex flex-col gap-4">
+              <p className="text-xs text-zinc-400">
+                Update your UPI ID to receive payments from friends directly into your bank account.
               </p>
               
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
                   UPI ID
                 </label>
                 <input 
@@ -196,19 +208,28 @@ export default function SettingsList({ userName, userPhone, upiId, email, isAdmi
                   value={newUpi}
                   onChange={e => setNewUpi(e.target.value)}
                   placeholder="e.g. name@bank"
-                  className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-zinc-100 focus:border-transparent font-medium text-gray-900 dark:text-zinc-100"
+                  className="w-full border border-zinc-800 bg-[#15171b] rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-mono text-sm text-zinc-100"
                   required
                 />
-                {error && <p className="text-xs font-semibold text-red-500 mt-1">{error}</p>}
+                {error && <p className="text-xs font-semibold text-red-400 mt-1">{error}</p>}
               </div>
 
-              <button
-                type="submit"
-                disabled={isSaving || !newUpi.includes('@')}
-                className="w-full mt-6 bg-black dark:bg-white text-white dark:text-black font-semibold py-3.5 rounded-xl active:scale-95 transition-all disabled:opacity-50 flex justify-center items-center gap-2 shadow-md"
-              >
-                {isSaving ? "Saving..." : "Save UPI Details"}
-              </button>
+              <div className="flex gap-2.5 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingUpi(false)}
+                  className="flex-1 py-3 px-4 rounded-xl border border-zinc-700 text-zinc-300 font-semibold text-xs hover:bg-zinc-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving || !newUpi.includes('@')}
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-4 rounded-xl text-xs active:scale-98 transition-all disabled:opacity-50 shadow-md"
+                >
+                  {isSaving ? "Saving..." : "Save UPI"}
+                </button>
+              </div>
             </form>
           </div>
         </div>

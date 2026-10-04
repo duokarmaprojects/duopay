@@ -65,8 +65,8 @@ export default async function GroupsPage() {
   )
 
   return (
-    <div className="flex flex-col flex-1 bg-slate-50 dark:bg-slate-950 min-h-screen">
-      <div className="flex-1 overflow-y-auto">
+    <div className="flex flex-col flex-1 bg-[#09090b] text-zinc-100 min-h-[100dvh] pb-24">
+      <div className="flex-1 w-full max-w-md mx-auto">
         <GroupsListClient groups={groupsData as any} />
       </div>
 

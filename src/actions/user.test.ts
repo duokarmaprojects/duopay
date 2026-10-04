@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { updateUpiId } from "./user"
+import { updateUpiId, updateUserProfile } from "./user"
 import { prisma } from "@/lib/db"
 import { auth } from "@/lib/auth"
 
@@ -112,6 +112,63 @@ describe("Server-Side UPI ID Management (user.ts)", () => {
         },
       })
     )
+  })
+})
+
+describe("updateUserProfile (user.ts)", () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    vi.mocked(auth as any).mockResolvedValue({
+      user: { id: "test-user-id" },
+    } as any)
+  })
+
+  it("should reject unauthenticated profile update", async () => {
+    vi.mocked(auth as any).mockResolvedValueOnce(null as any)
+    await expect(
+      updateUserProfile({ name: "Moiz D", upiId: "moiz@okhdfc" })
+    ).rejects.toThrow("Unauthorized")
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it("should reject invalid name (less than 2 chars)", async () => {
+    await expect(
+      updateUserProfile({ name: "M", upiId: "moiz@okhdfc" })
+    ).rejects.toThrow("Name must be at least 2 characters")
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it("should reject invalid UPI format", async () => {
+    await expect(
+      updateUserProfile({ name: "Moiz", upiId: "invalid-upi" })
+    ).rejects.toThrow("UPI ID must contain an '@' symbol")
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it("should update profile successfully for authenticated user", async () => {
+    vi.mocked(prisma.user.update as any).mockResolvedValueOnce({
+      id: "test-user-id",
+      name: "Moiz Dhilawala",
+      upiId: "moiz@okhdfc",
+      email: "moiz@example.com",
+    })
+
+    const result = await updateUserProfile({
+      name: "Moiz Dhilawala",
+      upiId: "MOIZ@OKHDFC",
+      email: "moiz@example.com",
+    })
+
+    expect(result.success).toBe(true)
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "test-user-id" },
+      data: {
+        name: "Moiz Dhilawala",
+        upiId: "moiz@okhdfc",
+        email: "moiz@example.com",
+      },
+      select: expect.any(Object),
+    })
   })
 })
 

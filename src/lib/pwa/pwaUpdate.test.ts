@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { isChunkLoadError } from "@/components/pwa/DeploymentRecoveryBoundary";
+import { isChunkLoadError, DeploymentRecoveryBoundary } from "@/components/pwa/DeploymentRecoveryBoundary";
 import { getBuildId, generatePwaVersion } from "../../../scripts/generate-pwa-version.mjs";
 import { APP_VERSION, BUILD_ID, CACHE_STATIC_NAME, CACHE_RUNTIME_NAME } from "./version";
 import fs from "fs";
@@ -58,6 +58,20 @@ describe("PWA Update & Service Worker Reliability Test Suite", () => {
       expect(isChunkLoadError(new Error("ValidationError: amount must be positive"))).toBe(false);
       expect(isChunkLoadError(new SyntaxError("Unexpected token"))).toBe(false);
       expect(isChunkLoadError(null)).toBe(false);
+    });
+
+    it("DeploymentRecoveryBoundary.getDerivedStateFromError should trap chunk errors and general errors without returning null", () => {
+      const chunkState = DeploymentRecoveryBoundary.getDerivedStateFromError(
+        new Error("ChunkLoadError: Loading chunk 555 failed")
+      );
+      expect(chunkState.hasChunkError).toBe(true);
+      expect(chunkState.hasGeneralError).toBe(false);
+
+      const generalState = DeploymentRecoveryBoundary.getDerivedStateFromError(
+        new TypeError("Cannot read properties of undefined")
+      );
+      expect(generalState.hasChunkError).toBe(false);
+      expect(generalState.hasGeneralError).toBe(true);
     });
   });
 

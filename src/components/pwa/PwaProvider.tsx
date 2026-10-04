@@ -85,10 +85,13 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
     }
 
     let isRefreshing = false;
+    // Only reload on controllerchange if the page was previously controlled by an older worker.
+    // On first load/registration, clients.claim() fires controllerchange, which must NOT force a reload.
+    const hadExistingController = Boolean(navigator.serviceWorker.controller);
 
     // 2. Controller Change Handler
     const handleControllerChange = () => {
-      if (!isRefreshing) {
+      if (!isRefreshing && hadExistingController) {
         isRefreshing = true;
         console.log("[PWA Update] New service worker active. Reloading into consistent version...");
         window.location.reload();
