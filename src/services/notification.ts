@@ -24,7 +24,7 @@ function cleanupDedupCache() {
  * Configure VAPID details if environment variables are provided.
  */
 function getVapidDetails() {
-  const rawPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim()
+  const rawPublic = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY)?.trim()
   const rawPrivate = process.env.VAPID_PRIVATE_KEY?.trim()
   const rawSubject = process.env.VAPID_SUBJECT?.trim()
 

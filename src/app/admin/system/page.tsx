@@ -30,7 +30,7 @@ export default async function AdminSystemPage({
 
   // Secure Server-Only Diagnostic for VAPID Configuration
   const vapidStatus = {
-    publicKey: !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    publicKey: !!(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY),
     privateKey: !!process.env.VAPID_PRIVATE_KEY,
     subject: !!process.env.VAPID_SUBJECT
   };
