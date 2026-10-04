@@ -30,16 +30,19 @@ type DashboardViewProps = {
 export default function DashboardView({
   user,
   sessionUser,
-  totalUserOwes,
-  totalOwedToUser,
-  detailedBalances,
+  totalUserOwes = 0,
+  totalOwedToUser = 0,
+  detailedBalances = [],
   unreadNotificationCount = 0,
   recentExpenses = [],
   monthlyTrueSpend = null,
 }: DashboardViewProps) {
   const [expandedSection, setExpandedSection] = useState<'owe' | 'owed' | null>(null)
   
-  const netBalance = totalOwedToUser - totalUserOwes
+  const safeTotalOwedToUser = typeof totalOwedToUser === 'number' && !isNaN(totalOwedToUser) ? totalOwedToUser : 0
+  const safeTotalUserOwes = typeof totalUserOwes === 'number' && !isNaN(totalUserOwes) ? totalUserOwes : 0
+  const netBalance = safeTotalOwedToUser - safeTotalUserOwes
+
   const greeting = useMemo(() => {
     const hour = new Date().getHours()
     if (hour < 12) return 'Good morning'
@@ -47,12 +50,14 @@ export default function DashboardView({
     return 'Good evening'
   }, [])
 
-  const formatMoney = (amountInPaise: number) => {
-    return `₹${(amountInPaise / 100).toFixed(2)}`
+  const formatMoney = (amountInPaise?: number | null) => {
+    const paise = typeof amountInPaise === "number" && !isNaN(amountInPaise) ? amountInPaise : 0
+    return `₹${(paise / 100).toFixed(2)}`
   }
 
-  const oweBalances = detailedBalances.filter(b => b.type === 'USER_OWES')
-  const owedBalances = detailedBalances.filter(b => b.type === 'OWED_TO_USER')
+  const safeBalances = Array.isArray(detailedBalances) ? detailedBalances : []
+  const oweBalances = safeBalances.filter(b => b?.type === 'USER_OWES')
+  const owedBalances = safeBalances.filter(b => b?.type === 'OWED_TO_USER')
 
   const toggleSection = (section: 'owe' | 'owed') => {
     setExpandedSection(prev => prev === section ? null : section)
@@ -77,11 +82,11 @@ export default function DashboardView({
             )}
           </Link>
           <Link href="/profile" className="w-10 h-10 rounded-full overflow-hidden border border-zinc-800 active:scale-95 transition-transform shadow-sm bg-[#121316]">
-            {user?.image || sessionUser.image ? (
-              <img src={user?.image?.startsWith('data:') ? `/api/users/${user.id}/avatar` : (user?.image || sessionUser.image || '')} alt="Profile" className="w-full h-full object-cover" />
+            {user?.image || sessionUser?.image ? (
+              <img src={user?.image?.startsWith('data:') ? `/api/users/${user?.id}/avatar` : (user?.image || sessionUser?.image || '')} alt="Profile" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-zinc-400 font-semibold">
-                {(user?.name || sessionUser.name || 'U').charAt(0).toUpperCase()}
+                {(user?.name || sessionUser?.name || 'U').charAt(0).toUpperCase()}
               </div>
             )}
           </Link>
@@ -92,7 +97,7 @@ export default function DashboardView({
         {/* Greeting */}
         <div>
           <h1 suppressHydrationWarning className="text-2xl font-bold tracking-tight text-zinc-100">
-            {greeting}, {user?.name?.split(' ')[0] || sessionUser.name?.split(' ')[0]}
+            {greeting}, {user?.name?.split(' ')[0] || sessionUser?.name?.split(' ')[0] || 'Friend'}
           </h1>
         </div>
 
@@ -114,7 +119,7 @@ export default function DashboardView({
                 <span className="text-xs font-semibold text-red-600 dark:text-red-500 uppercase tracking-wide">You Owe</span>
                 {expandedSection === 'owe' ? <ChevronUp size={16} className="text-red-500" /> : <ChevronDown size={16} className="text-red-500" />}
               </div>
-              <span className="text-xl font-bold text-gray-900 dark:text-zinc-100">{formatMoney(totalUserOwes)}</span>
+              <span className="text-xl font-bold text-gray-900 dark:text-zinc-100">{formatMoney(safeTotalUserOwes)}</span>
             </div>
 
             <div 
@@ -125,7 +130,7 @@ export default function DashboardView({
                 <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-500 uppercase tracking-wide">You're Owed</span>
                 {expandedSection === 'owed' ? <ChevronUp size={16} className="text-emerald-500" /> : <ChevronDown size={16} className="text-emerald-500" />}
               </div>
-              <span className="text-xl font-bold text-gray-900 dark:text-zinc-100">{formatMoney(totalOwedToUser)}</span>
+              <span className="text-xl font-bold text-gray-900 dark:text-zinc-100">{formatMoney(safeTotalOwedToUser)}</span>
             </div>
           </div>
 
@@ -277,7 +282,7 @@ export default function DashboardView({
           </div>
           
           <div className="flex flex-col gap-3">
-            {recentExpenses.length === 0 ? (
+            {(!recentExpenses || recentExpenses.length === 0) ? (
               <div className="bg-[#121316] rounded-2xl p-6 text-center border border-zinc-800/80 shadow-sm">
                 <Clock size={24} className="mx-auto text-zinc-500 mb-2" />
                 <p className="text-sm font-medium text-zinc-100">No recent expenses</p>
@@ -285,21 +290,29 @@ export default function DashboardView({
               </div>
             ) : (
               recentExpenses.map((expense: any) => {
-                const isPayer = expense.payerId === user.id
-                const userParticipant = expense.participants.find((p: any) => p.userId === user.id)
-                const amountForUser = userParticipant ? userParticipant.amountOwed : 0
+                if (!expense) return null
+                const isPayer = expense.payerId === user?.id
+                const participants = Array.isArray(expense.participants) ? expense.participants : []
+                const userParticipant = participants.find((p: any) => p?.userId === user?.id)
+                const amountForUser = userParticipant ? (userParticipant.share ?? userParticipant.amountOwed ?? 0) : 0
+                const resolvedCategory = typeof expense.category === "string" 
+                  ? expense.category 
+                  : (expense.category?.name || "OTHER")
+                const displayDate = expense.date 
+                  ? new Date(expense.date).toLocaleDateString() 
+                  : "Recent"
                 
                 return (
                   <Link key={expense.id} href={`/expenses/${expense.id}`} className="bg-[#121316] p-4 rounded-2xl border border-zinc-800/80 shadow-sm flex items-center gap-3 active:scale-[0.98] transition-transform">
                     <ExpenseIcon 
-                      category={expense.category?.name || expense.categoryId} 
-                      description={expense.description} 
+                      category={resolvedCategory} 
+                      description={expense.description || ""} 
                       className="w-12 h-12 rounded-xl"
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-zinc-100 truncate">{expense.description}</p>
+                      <p className="font-semibold text-sm text-zinc-100 truncate">{expense.description || "Expense"}</p>
                       <p suppressHydrationWarning className="text-xs text-zinc-400 truncate">
-                        {expense.group?.name || 'Non-group expense'} • {new Date(expense.date).toLocaleDateString()}
+                        {expense.group?.name || 'Non-group expense'} • {displayDate}
                       </p>
                     </div>
                     <div className="text-right flex flex-col items-end">

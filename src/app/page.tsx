@@ -16,14 +16,19 @@ export default async function HomePage() {
     redirect('/login')
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: {
-      groupMembers: {
-        include: { group: true }
+  let user = null
+  try {
+    user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: {
+        groupMembers: {
+          include: { group: true }
+        }
       }
-    }
-  })
+    })
+  } catch (err) {
+    console.error("[HomePage] Error fetching user:", err)
+  }
 
   if (!user) {
     redirect('/login?expired=1')
@@ -35,23 +40,45 @@ export default async function HomePage() {
 
   const now = new Date()
   const [
-    { totalOwedToUser, totalUserOwes, detailedBalances },
+    balancesData,
     cashbackSummary,
     unreadNotificationCount,
     recentExpenses,
     monthlyTrueSpend,
   ] = await Promise.all([
-    getUserBalances(session.user.id),
-    getCashbackSummary(),
-    prisma.notification.count({ where: { userId: session.user.id, readAt: null } }),
+    getUserBalances(session.user.id).catch((err) => {
+      console.error("[HomePage] getUserBalances failed:", err)
+      return { totalOwedToUser: 0, totalUserOwes: 0, detailedBalances: [] }
+    }),
+    getCashbackSummary().catch((err) => {
+      console.error("[HomePage] getCashbackSummary failed:", err)
+      return null
+    }),
+    prisma.notification.count({ where: { userId: session.user.id, readAt: null } }).catch((err) => {
+      console.error("[HomePage] notification.count failed:", err)
+      return 0
+    }),
     prisma.expense.findMany({
-      where: { participants: { some: { userId: session.user.id } } },
+      where: {
+        OR: [
+          { payerId: session.user.id },
+          { participants: { some: { userId: session.user.id } } },
+        ],
+      },
       include: { group: true, participants: true, payer: true },
       orderBy: { date: 'desc' },
       take: 5
+    }).catch((err) => {
+      console.error("[HomePage] expense.findMany failed:", err)
+      return []
     }),
-    getUserMonthlyTrueSpend(session.user.id, now.getFullYear(), now.getMonth()).catch(() => null),
+    getUserMonthlyTrueSpend(session.user.id, now.getFullYear(), now.getMonth()).catch((err) => {
+      console.error("[HomePage] getUserMonthlyTrueSpend failed:", err)
+      return null
+    }),
   ])
+
+  const { totalOwedToUser = 0, totalUserOwes = 0, detailedBalances = [] } = balancesData || {}
 
   return (
     <DashboardView 

@@ -16,62 +16,73 @@ export default async function ActivityPage({
   const userName = session.user.name || "Unknown"
   const userImage = session.user.image
 
-  // Fetch authorized expenses
-  const expenses = await prisma.expense.findMany({
-    where: {
-      OR: [
-        { payerId: userId },
-        { participants: { some: { userId: userId } } },
-      ],
-    },
-    include: {
-      payer: { select: { id: true, name: true } },
-      group: { select: { id: true, name: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 60,
-  })
+  // Fetch authorized events in parallel with defensive fallbacks
+  const [expenses, settlements, friendships, groupMemberships] = await Promise.all([
+    prisma.expense.findMany({
+      where: {
+        OR: [
+          { payerId: userId },
+          { participants: { some: { userId: userId } } },
+        ],
+      },
+      include: {
+        payer: { select: { id: true, name: true } },
+        group: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 60,
+    }).catch((err) => {
+      console.error("[ActivityPage] Error fetching expenses:", err)
+      return []
+    }),
 
-  // Fetch authorized settlements
-  const settlements = await prisma.settlement.findMany({
-    where: {
-      OR: [
-        { payerId: userId },
-        { receiverId: userId },
-      ],
-    },
-    include: {
-      payer: { select: { id: true, name: true } },
-      receiver: { select: { id: true, name: true } },
-      group: { select: { id: true, name: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 40,
-  })
+    prisma.settlement.findMany({
+      where: {
+        OR: [
+          { payerId: userId },
+          { receiverId: userId },
+        ],
+      },
+      include: {
+        payer: { select: { id: true, name: true } },
+        receiver: { select: { id: true, name: true } },
+        group: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 40,
+    }).catch((err) => {
+      console.error("[ActivityPage] Error fetching settlements:", err)
+      return []
+    }),
 
-  // Fetch user friendships (recent friend events)
-  const friendships = await prisma.friendship.findMany({
-    where: {
-      OR: [{ userId }, { friendId: userId }],
-      status: "ACCEPTED",
-    },
-    include: {
-      user: { select: { id: true, name: true } },
-      friend: { select: { id: true, name: true } },
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 15,
-  })
+    prisma.friendship.findMany({
+      where: {
+        OR: [{ userId }, { friendId: userId }],
+        status: "ACCEPTED",
+      },
+      include: {
+        user: { select: { id: true, name: true } },
+        friend: { select: { id: true, name: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 15,
+    }).catch((err) => {
+      console.error("[ActivityPage] Error fetching friendships:", err)
+      return []
+    }),
 
-  // Fetch groups joined by user
-  const groupMemberships = await prisma.groupMember.findMany({
-    where: { userId },
-    include: {
-      group: { select: { id: true, name: true } },
-    },
-    orderBy: { joinedAt: "desc" },
-    take: 10,
-  })
+    prisma.groupMember.findMany({
+      where: { userId },
+      include: {
+        group: { select: { id: true, name: true } },
+      },
+      orderBy: { joinedAt: "desc" },
+      take: 10,
+    }).catch((err) => {
+      console.error("[ActivityPage] Error fetching group memberships:", err)
+      return []
+    }),
+  ])
 
   // Transform and combine
   const activities: ActivityItem[] = [

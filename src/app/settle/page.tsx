@@ -27,10 +27,15 @@ export default async function SettlePage({
   }
 
   // Calculate exactly how much is owed
-  const balances = await getUserBalances(session.user.id)
+  const balances = await getUserBalances(session.user.id).catch(() => ({
+    totalOwedToUser: 0,
+    totalUserOwes: 0,
+    detailedBalances: [],
+  }))
   
   // Find the exact balance for this receiver
-  const balance = balances.detailedBalances.find(b => b.userId === userId)
+  const detailedBalances = Array.isArray(balances?.detailedBalances) ? balances.detailedBalances : []
+  const balance = detailedBalances.find(b => b?.userId === userId)
   const amountToPay = balance?.type === 'USER_OWES' ? balance.amount : 0
 
   if (amountToPay === 0) {

@@ -9,42 +9,53 @@ export default async function GroupsPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: {
-      groupMembers: {
-        include: {
-          group: {
-            include: {
-              _count: {
-                select: { members: true }
-              },
-              expenses: {
-                select: {
-                  amount: true
+  let user = null
+  try {
+    user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: {
+        groupMembers: {
+          include: {
+            group: {
+              include: {
+                _count: {
+                  select: { members: true }
+                },
+                expenses: {
+                  select: {
+                    amount: true
+                  }
                 }
               }
             }
           }
         }
       }
-    }
-  })
+    })
+  } catch (err) {
+    console.error("[GroupsPage] Error fetching user groups:", err)
+  }
 
   // Calculate balances for each group using domain logic
   const groupsData = await Promise.all(
     (user?.groupMembers || []).map(async ({ group }) => {
-      const { netPositions } = await getGroupBalances(group.id)
+      let netPositions: Record<string, Record<string, number>> = {}
+      try {
+        const res = await getGroupBalances(group.id)
+        netPositions = (res.netPositions as any) || {}
+      } catch (err) {
+        console.error(`[GroupsPage] Failed to get balances for group ${group.id}:`, err)
+      }
       
       // Calculate net balance for current user in this group
       let netAmount = 0
-      const userId = session!.user!.id!
+      const userId = session?.user?.id || ""
       const userPositions = netPositions[userId] || {}
       for (const amount of Object.values(userPositions)) {
-        netAmount += amount as number
+        netAmount += (amount as number) || 0
       }
 
-      const totalSpent = group.expenses.reduce((sum, exp) => sum + exp.amount, 0)
+      const totalSpent = (group.expenses || []).reduce((sum, exp) => sum + (exp.amount || 0), 0)
 
       return {
         id: group.id,
@@ -57,7 +68,7 @@ export default async function GroupsPage() {
         targetAmount: group.targetAmount,
         deadline: group.deadline?.toISOString(),
         poolOwnerId: group.poolOwnerId,
-        memberCount: group._count.members,
+        memberCount: group._count?.members || 0,
         netAmount,
         totalSpent
       }

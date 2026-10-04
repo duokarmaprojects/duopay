@@ -40,103 +40,113 @@ export interface SimplifiedSettlementPlan {
  * Fetches all relevant expenses and settlements and computes exact net balances in minor units (paise).
  */
 export async function getUserBalances(userId: string): Promise<UserBalanceSummary> {
-  const expenses = await prisma.expense.findMany({
-    where: {
-      OR: [
-        { payerId: userId },
-        { participants: { some: { userId } } }
-      ]
-    },
-    include: {
-      participants: true
-    }
-  })
+  try {
+    const expenses = await prisma.expense.findMany({
+      where: {
+        OR: [
+          { payerId: userId },
+          { participants: { some: { userId } } }
+        ]
+      },
+      include: {
+        participants: true
+      }
+    })
 
-  const settlements = await prisma.settlement.findMany({
-    where: {
-      OR: [
-        { payerId: userId },
-        { receiverId: userId }
-      ],
-      status: { in: ["COMPLETED", "SETTLED"] }
-    }
-  })
+    const settlements = await prisma.settlement.findMany({
+      where: {
+        OR: [
+          { payerId: userId },
+          { receiverId: userId }
+        ],
+        status: { in: ["COMPLETED", "SETTLED"] }
+      }
+    })
 
-  const expenseRecords: ExpenseRecord[] = expenses.map(e => ({
-    payerId: e.payerId,
-    participants: e.participants.map(p => ({
-      userId: p.userId,
-      share: p.share
+    const expenseRecords: ExpenseRecord[] = expenses.map(e => ({
+      payerId: e.payerId,
+      participants: (e.participants || []).map(p => ({
+        userId: p.userId,
+        share: p.share
+      }))
     }))
-  }))
 
-  const settlementRecords: SettlementRecord[] = settlements.map(s => ({
-    payerId: s.payerId,
-    receiverId: s.receiverId,
-    amount: s.amount
-  }))
+    const settlementRecords: SettlementRecord[] = settlements.map(s => ({
+      payerId: s.payerId,
+      receiverId: s.receiverId,
+      amount: s.amount
+    }))
 
-  const netPositions = calculateNetBalances(expenseRecords, settlementRecords)
-  const userPosition = netPositions[userId] || {}
-  
-  let totalOwedToUser = 0
-  let totalUserOwes = 0
-  const detailedBalances: UserBalanceSummary["detailedBalances"] = []
-  
-  const otherUserIds = Object.keys(userPosition)
-  const users = await prisma.user.findMany({
-    where: { id: { in: otherUserIds } },
-    select: {
-      id: true,
-      name: true,
-      image: true,
-      upiId: true,
-      settings: {
-        select: { showUpiOnProfile: true }
+    const netPositions = calculateNetBalances(expenseRecords, settlementRecords)
+    const userPosition = netPositions[userId] || {}
+    
+    let totalOwedToUser = 0
+    let totalUserOwes = 0
+    const detailedBalances: UserBalanceSummary["detailedBalances"] = []
+    
+    const otherUserIds = Object.keys(userPosition)
+    const users = await prisma.user.findMany({
+      where: { id: { in: otherUserIds } },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        upiId: true,
+        settings: {
+          select: { showUpiOnProfile: true }
+        }
+      }
+    })
+    
+    const userMap = new Map(users.map(u => [u.id, u]))
+
+    for (const [otherUserId, amount] of Object.entries(userPosition)) {
+      const userObj = userMap.get(otherUserId)
+      const userName = userObj?.name || "Friend"
+      const userImage = userObj?.image || null
+      const upiId = userObj?.settings?.showUpiOnProfile === false ? null : userObj?.upiId
+
+      if (amount > 0) {
+        totalOwedToUser += amount
+        detailedBalances.push({
+          userId: otherUserId,
+          userName,
+          userImage,
+          upiId,
+          amount,
+          type: "OWED_TO_USER"
+        })
+      } else if (amount < 0) {
+        const absAmount = Math.abs(amount)
+        totalUserOwes += absAmount
+        detailedBalances.push({
+          userId: otherUserId,
+          userName,
+          userImage,
+          upiId,
+          amount: absAmount,
+          type: "USER_OWES"
+        })
       }
     }
-  })
-  
-  const userMap = new Map(users.map(u => [u.id, u]))
 
-  for (const [otherUserId, amount] of Object.entries(userPosition)) {
-    const userObj = userMap.get(otherUserId)
-    const userName = userObj?.name || "Friend"
-    const userImage = userObj?.image || null
-    const upiId = userObj?.settings?.showUpiOnProfile === false ? null : userObj?.upiId
+    // Sort by highest amount first
+    detailedBalances.sort((a, b) => b.amount - a.amount)
 
-    if (amount > 0) {
-      totalOwedToUser += amount
-      detailedBalances.push({
-        userId: otherUserId,
-        userName,
-        userImage,
-        upiId,
-        amount,
-        type: "OWED_TO_USER"
-      })
-    } else if (amount < 0) {
-      const absAmount = Math.abs(amount)
-      totalUserOwes += absAmount
-      detailedBalances.push({
-        userId: otherUserId,
-        userName,
-        userImage,
-        upiId,
-        amount: absAmount,
-        type: "USER_OWES"
-      })
+    return {
+      totalOwedToUser,
+      totalUserOwes,
+      netBalance: totalOwedToUser - totalUserOwes,
+      detailedBalances
     }
-  }
-
-  // Sort by highest amount first
-  detailedBalances.sort((a, b) => b.amount - a.amount)
-
-  return {
-    totalOwedToUser,
-    totalUserOwes,
-    netBalance: totalOwedToUser - totalUserOwes,
-    detailedBalances
+  } catch (error) {
+    console.error("[balance.ts] getUserBalances error:", error)
+    return {
+      totalOwedToUser: 0,
+      totalUserOwes: 0,
+      netBalance: 0,
+      detailedBalances: []
+    }
   }
 }
 
@@ -145,35 +155,44 @@ export async function getUserBalances(userId: string): Promise<UserBalanceSummar
  * Computes pairwise and net balances strictly scoped to a group.
  */
 export async function getGroupBalances(groupId: string, sessionUserId?: string) {
-  const expenses = await prisma.expense.findMany({
-    where: { groupId, status: "FINAL" },
-    include: { participants: true }
-  })
+  try {
+    const expenses = await prisma.expense.findMany({
+      where: { groupId, status: "FINAL" },
+      include: { participants: true }
+    })
 
-  const settlements = await prisma.settlement.findMany({
-    where: { groupId, status: { in: ["COMPLETED", "SETTLED"] } }
-  })
+    const settlements = await prisma.settlement.findMany({
+      where: { groupId, status: { in: ["COMPLETED", "SETTLED"] } }
+    })
 
-  const expenseRecords: ExpenseRecord[] = expenses.map(e => ({
-    payerId: e.payerId,
-    participants: e.participants.map(p => ({
-      userId: p.userId,
-      share: p.share
+    const expenseRecords: ExpenseRecord[] = expenses.map(e => ({
+      payerId: e.payerId,
+      participants: (e.participants || []).map(p => ({
+        userId: p.userId,
+        share: p.share
+      }))
     }))
-  }))
 
-  const settlementRecords: SettlementRecord[] = settlements.map(s => ({
-    payerId: s.payerId,
-    receiverId: s.receiverId,
-    amount: s.amount
-  }))
+    const settlementRecords: SettlementRecord[] = settlements.map(s => ({
+      payerId: s.payerId,
+      receiverId: s.receiverId,
+      amount: s.amount
+    }))
 
-  const netPositions = calculateNetBalances(expenseRecords, settlementRecords)
+    const netPositions = calculateNetBalances(expenseRecords, settlementRecords)
 
-  return {
-    netPositions,
-    expenseRecords,
-    settlementRecords
+    return {
+      netPositions,
+      expenseRecords,
+      settlementRecords
+    }
+  } catch (error) {
+    console.error("[balance.ts] getGroupBalances error:", error)
+    return {
+      netPositions: {},
+      expenseRecords: [],
+      settlementRecords: []
+    }
   }
 }
 

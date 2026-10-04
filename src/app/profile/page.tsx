@@ -7,6 +7,7 @@ import { getUserBalances } from "@/services/balance"
 import ProfileImageUpload from "./upload-form"
 import SettingsList from "./SettingsList"
 import { getUserSettings } from "@/actions/settings"
+import { defaultUserSettings } from "@/domain/settings"
 import BottomNav from "@/components/navigation/BottomNav"
 import ProfileSections from "./ProfileSections"
 
@@ -22,14 +23,20 @@ export default async function ProfilePage() {
   if (!user) redirect('/login?expired=1')
 
   const [
-    { totalOwedToUser, totalUserOwes },
+    balancesData,
     groupCount,
     expenseCount,
     settlementCount,
     userSettings,
   ] = await Promise.all([
-    getUserBalances(session.user.id),
-    prisma.groupMember.count({ where: { userId: session.user.id } }),
+    getUserBalances(session.user.id).catch((err) => {
+      console.error("[ProfilePage] Error fetching balances:", err)
+      return { totalOwedToUser: 0, totalUserOwes: 0, detailedBalances: [] }
+    }),
+    prisma.groupMember.count({ where: { userId: session.user.id } }).catch((err) => {
+      console.error("[ProfilePage] Error counting groups:", err)
+      return 0
+    }),
     prisma.expense.count({ 
       where: { 
         OR: [
@@ -37,6 +44,9 @@ export default async function ProfilePage() {
           { participants: { some: { userId: session.user.id } } }
         ] 
       } 
+    }).catch((err) => {
+      console.error("[ProfilePage] Error counting expenses:", err)
+      return 0
     }),
     prisma.settlement.count({ 
       where: { 
@@ -45,9 +55,17 @@ export default async function ProfilePage() {
           { receiverId: session.user.id }
         ] 
       } 
+    }).catch((err) => {
+      console.error("[ProfilePage] Error counting settlements:", err)
+      return 0
     }),
-    getUserSettings(),
+    getUserSettings().catch((err) => {
+      console.error("[ProfilePage] Error fetching settings:", err)
+      return { ...defaultUserSettings, userId: session.user!.id }
+    }),
   ])
+
+  const { totalOwedToUser = 0, totalUserOwes = 0 } = balancesData || {}
 
   return (
     <div className="flex flex-col flex-1 bg-[#09090b] text-zinc-100 min-h-[100dvh] pb-28">

@@ -28,8 +28,25 @@ export default async function RewardsPage() {
   }
 
   const [summary, history] = await Promise.all([
-    getCashbackSummary(),
-    getCashbackHistory(50),
+    getCashbackSummary().catch((err) => {
+      console.error("[RewardsPage] Error fetching cashback summary:", err)
+      return {
+        balancePaise: 0,
+        balanceRupees: "0.00",
+        thresholdPaise: 2500,
+        remainingPaise: 2500,
+        isUnlocked: false,
+        progressPercentage: 0,
+        upiId: user.upiId,
+        canRedeem: false,
+        reason: undefined,
+        activeRedemption: null,
+      }
+    }),
+    getCashbackHistory(50).catch((err) => {
+      console.error("[RewardsPage] Error fetching cashback history:", err)
+      return []
+    }),
   ])
 
   return (
